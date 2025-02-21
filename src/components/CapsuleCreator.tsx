@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
+import { Calendar } from "./ui/calendar"; // Add this import
 import { format } from "date-fns";
 import { CalendarIcon, ImageIcon, Music, Loader2, Upload } from "lucide-react";
 import {
