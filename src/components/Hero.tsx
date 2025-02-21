@@ -12,9 +12,6 @@ export const Hero = () => {
         transition={{ duration: 0.8 }}
         className="max-w-3xl mx-auto space-y-6"
       >
-        <span className="px-3 py-1 text-sm font-medium text-primary-foreground bg-primary rounded-full">
-          Beta Release
-        </span>
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight">
           Preserve Your Moments in Time
         </h1>
@@ -28,7 +25,7 @@ export const Hero = () => {
           onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
         >
           Create Your Time Capsule
-          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x 2 transition-transform" />
+          <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-2 transition-transform" />
         </Button>
       </motion.div>
     </section>

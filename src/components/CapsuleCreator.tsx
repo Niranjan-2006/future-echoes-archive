@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
@@ -12,6 +11,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "./ui/popover";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export const CapsuleCreator = () => {
   const [message, setMessage] = useState("");
@@ -33,13 +34,29 @@ export const CapsuleCreator = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    setLoading(false);
-    // Reset form
-    setMessage("");
-    setDate(undefined);
-    setImage(null);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error("User not authenticated");
+
+      const { error } = await supabase.from("time_capsules").insert({
+        message,
+        reveal_date: date,
+        user_id: user.id,
+        image_url: image
+      });
+
+      if (error) throw error;
+      
+      toast.success("Time capsule created successfully!");
+      setMessage("");
+      setDate(undefined);
+      setImage(null);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -103,7 +120,7 @@ export const CapsuleCreator = () => {
                   {date ? format(date, "PPP") : "Pick a date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
+              <PopoverContent className="w-auto p-0 bg-white" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
