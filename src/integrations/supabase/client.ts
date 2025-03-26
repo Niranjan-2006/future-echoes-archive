@@ -8,5 +8,21 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {
     persistSession: true,
     autoRefreshToken: true,
+    storageKey: 'time-capsule-auth', // Custom storage key for session
   }
 });
+
+// Function to analyze sentiment using the edge function
+export const analyzeSentiment = async (text: string) => {
+  try {
+    const { data, error } = await supabase.functions.invoke("analyze-sentiment", {
+      body: { text },
+    });
+
+    if (error) throw error;
+    return data.sentiment;
+  } catch (error) {
+    console.error("Error analyzing sentiment:", error);
+    return null;
+  }
+};

@@ -1,5 +1,5 @@
-
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Calendar } from "./ui/calendar";
@@ -12,10 +12,13 @@ import {
 } from "./ui/popover";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, analyzeSentiment } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { useCapsules } from "@/contexts/CapsuleContext";
 
 export const CapsuleCreator = () => {
+  const navigate = useNavigate();
+  const { fetchCapsules } = useCapsules();
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState<string>("");
   const [message, setMessage] = useState<string>("");
@@ -29,11 +32,20 @@ export const CapsuleCreator = () => {
   const audioChunksRef = useRef<BlobPart[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => {
+    return () => {
+      previewUrls.forEach(url => URL.revokeObjectURL(url));
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+      if (isRecording && audioRecorderRef.current) {
+        audioRecorderRef.current.stop();
+      }
+    };
+  }, [previewUrls, audioUrl, isRecording]);
+
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
     setFiles((prev) => [...prev, ...selectedFiles]);
     
-    // Create preview URLs for the files
     selectedFiles.forEach(file => {
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -50,13 +62,11 @@ export const CapsuleCreator = () => {
 
   const toggleRecording = async () => {
     if (isRecording) {
-      // Stop recording
       if (audioRecorderRef.current) {
         audioRecorderRef.current.stop();
       }
     } else {
       try {
-        // Start recording
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         const mediaRecorder = new MediaRecorder(stream);
         audioRecorderRef.current = mediaRecorder;
@@ -75,7 +85,6 @@ export const CapsuleCreator = () => {
           setIsRecording(false);
           toast.success("Recording saved!");
           
-          // Stop all tracks of the stream
           stream.getTracks().forEach(track => track.stop());
         };
 
@@ -155,33 +164,47 @@ export const CapsuleCreator = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
 
-      // Combine date and time
       const revealDate = date ? new Date(date) : new Date();
       if (time) {
         const [hours, minutes] = time.split(':');
         revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
       }
 
-      // Prepare audio data if exists
       const audioData = await prepareAudioData();
+
+      let sentimentData = null;
+      if (message) {
+        try {
+          sentimentData = await analyzeSentiment(message);
+          console.log("Sentiment analysis result:", sentimentData);
+        } catch (sentimentError) {
+          console.error("Error with sentiment analysis:", sentimentError);
+          // Continue even if sentiment analysis fails
+        }
+      }
 
       const { error } = await supabase.from("time_capsules").insert({
         message: message || (audioData ? "Audio Message" : ""),
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
-        image_url: previewUrls[0] || null, // For now, just use the first image
+        image_url: previewUrls[0] || null,
         audio_url: audioData,
+        sentiment: sentimentData ? JSON.stringify(sentimentData) : null,
       });
 
       if (error) throw error;
       
       toast.success("Time capsule created successfully!");
+      
       setDate(undefined);
       setTime("");
       setMessage("");
       setFiles([]);
       setPreviewUrls([]);
       setAudioUrl(null);
+      
+      await fetchCapsules();
+      navigate("/");
     } catch (error: any) {
       toast.error(error.message);
     } finally {
@@ -271,7 +294,7 @@ export const CapsuleCreator = () => {
                   {date ? format(date, "PPP") : "Pick a date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0 bg-background/95 backdrop-blur-sm" align="start">
+              <PopoverContent className="w-auto p-0 bg-background backdrop-blur-sm" align="start">
                 <Calendar
                   mode="single"
                   selected={date}
@@ -293,7 +316,14 @@ export const CapsuleCreator = () => {
           </div>
         </div>
         
-        <div className="flex justify-end">
+        <div className="flex justify-end space-x-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/")}
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             disabled={loading}
