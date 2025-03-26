@@ -21,9 +21,6 @@ export const Navigation = () => {
             <Button variant="ghost" onClick={() => navigate("/")}>
               Home
             </Button>
-            <Button variant="ghost" onClick={() => navigate("/create")}>
-              Create Capsule
-            </Button>
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={handleSignOut}>

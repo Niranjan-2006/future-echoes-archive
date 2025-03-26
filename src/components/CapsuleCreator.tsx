@@ -4,19 +4,21 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon, ImageIcon, Mic, Loader2, Upload } from "lucide-react";
+import { CalendarIcon, ImageIcon, Mic, Loader2 } from "lucide-react";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "./ui/popover";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 export const CapsuleCreator = () => {
   const [date, setDate] = useState<Date>();
   const [time, setTime] = useState<string>("");
+  const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
@@ -67,7 +69,7 @@ export const CapsuleCreator = () => {
       }
 
       const { error } = await supabase.from("time_capsules").insert({
-        message: audioUrl ? "Audio Message" : "",
+        message: message || (audioUrl ? "Audio Message" : ""),
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0], // For now, just use the first image
@@ -79,6 +81,7 @@ export const CapsuleCreator = () => {
       toast.success("Time capsule created successfully!");
       setDate(undefined);
       setTime("");
+      setMessage("");
       setFiles([]);
       setPreviewUrls([]);
       setAudioUrl(null);
@@ -92,17 +95,22 @@ export const CapsuleCreator = () => {
   return (
     <Card className="p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="border-2 border-dashed rounded-lg p-8 flex flex-col items-center">
-          <div className="flex gap-4 mb-4">
+        <div className="relative">
+          <Textarea
+            placeholder="What do you want to capture in your time capsule?"
+            className="min-h-[200px] resize-none p-4"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+          />
+          <div className="absolute bottom-4 right-4 flex space-x-2">
             <Button 
               type="button" 
-              variant="outline" 
-              size="lg" 
+              variant="ghost" 
+              size="icon"
               onClick={toggleRecording}
-              className={isRecording ? "bg-red-100 text-red-500 hover:bg-red-200" : ""}
+              className={isRecording ? "text-red-500" : ""}
             >
-              <Mic className={`mr-2 h-5 w-5 ${isRecording ? "text-red-500" : ""}`} />
-              {isRecording ? "Stop Recording" : "Record Audio"}
+              <Mic className={`h-5 w-5 ${isRecording ? "text-red-500" : ""}`} />
             </Button>
             
             <div>
@@ -115,45 +123,37 @@ export const CapsuleCreator = () => {
                 id="file-upload"
               />
               <label htmlFor="file-upload">
-                <Button type="button" variant="outline" size="lg" asChild>
+                <Button type="button" variant="ghost" size="icon" asChild>
                   <span>
-                    <ImageIcon className="mr-2 h-5 w-5" />
-                    Add Images
+                    <ImageIcon className="h-5 w-5" />
                   </span>
                 </Button>
               </label>
             </div>
           </div>
-          
-          {audioUrl && (
-            <div className="mt-2 p-2 bg-accent rounded-md w-full">
-              <p className="text-sm flex items-center">
-                <Mic className="mr-2 h-4 w-4" />
-                Audio recorded successfully
-              </p>
-            </div>
-          )}
-          
-          {previewUrls.length > 0 && (
-            <div className="grid grid-cols-3 gap-2 mt-4 w-full">
-              {previewUrls.map((url, idx) => (
-                <img
-                  key={idx}
-                  src={url}
-                  alt={`Preview ${idx + 1}`}
-                  className="rounded-lg w-full h-24 object-cover"
-                />
-              ))}
-            </div>
-          )}
-          
-          {!audioUrl && previewUrls.length === 0 && (
-            <div className="text-center text-muted-foreground mt-4">
-              <Upload className="h-12 w-12 mx-auto mb-2" />
-              <p>Add audio or images to your time capsule</p>
-            </div>
-          )}
         </div>
+        
+        {audioUrl && (
+          <div className="p-2 bg-accent rounded-md">
+            <p className="text-sm flex items-center">
+              <Mic className="mr-2 h-4 w-4" />
+              Audio recorded successfully
+            </p>
+          </div>
+        )}
+        
+        {previewUrls.length > 0 && (
+          <div className="grid grid-cols-3 gap-2">
+            {previewUrls.map((url, idx) => (
+              <img
+                key={idx}
+                src={url}
+                alt={`Preview ${idx + 1}`}
+                className="rounded-lg w-full h-24 object-cover"
+              />
+            ))}
+          </div>
+        )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -192,7 +192,7 @@ export const CapsuleCreator = () => {
         <div className="flex justify-end">
           <Button
             type="submit"
-            disabled={((!audioUrl && previewUrls.length === 0) || !date) || loading}
+            disabled={loading}
           >
             {loading ? (
               <>
