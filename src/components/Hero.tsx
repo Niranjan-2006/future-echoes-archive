@@ -2,8 +2,15 @@
 import { ArrowRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 
 export const Hero = () => {
+  const navigate = useNavigate();
+  
+  const handleCreateCapsule = () => {
+    navigate("/create");
+  };
+  
   return (
     <section className="min-h-[70vh] flex flex-col items-center justify-center text-center px-4 py-16 bg-gradient-to-b from-accent to-background">
       <motion.div
@@ -22,7 +29,7 @@ export const Hero = () => {
         <Button
           size="lg"
           className="mt-8 hover-scale group"
-          onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+          onClick={handleCreateCapsule}
         >
           Create Your Time Capsule
           <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-2 transition-transform" />

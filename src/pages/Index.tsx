@@ -1,6 +1,5 @@
 
 import { Hero } from "@/components/Hero";
-import { CapsuleCreator } from "@/components/CapsuleCreator";
 import { Navigation } from "@/components/Navigation";
 
 const Index = () => {
@@ -8,7 +7,6 @@ const Index = () => {
     <main className="min-h-screen bg-background pt-16">
       <Navigation />
       <Hero />
-      <CapsuleCreator />
     </main>
   );
 };

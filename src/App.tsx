@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
+import CreateCapsule from "./pages/CreateCapsule";
 
 const queryClient = new QueryClient();
 
@@ -33,6 +34,10 @@ const App = () => {
             <Route
               path="/"
               element={isAuthenticated ? <Index /> : <Navigate to="/auth" />}
+            />
+            <Route
+              path="/create"
+              element={isAuthenticated ? <CreateCapsule /> : <Navigate to="/auth" />}
             />
             <Route
               path="/auth"
