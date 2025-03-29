@@ -24,6 +24,7 @@ export const MessageInput = ({
   const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
+  const [apiError, setApiError] = useState(false);
 
   // Analyze sentiment with debounce
   useEffect(() => {
@@ -36,9 +37,20 @@ export const MessageInput = ({
       // Set new timeout to analyze sentiment after 1 second of no typing
       const timeout = setTimeout(async () => {
         setAnalyzing(true);
-        const result = await analyzeSentiment(message);
-        setSentiment(result);
-        setAnalyzing(false);
+        setApiError(false);
+        try {
+          const result = await analyzeSentiment(message);
+          if (result) {
+            setSentiment(result);
+          } else {
+            setApiError(true);
+          }
+        } catch (error) {
+          console.error("Error analyzing sentiment:", error);
+          setApiError(true);
+        } finally {
+          setAnalyzing(false);
+        }
       }, 1000);
       
       setDebounceTimeout(timeout);
@@ -58,6 +70,14 @@ export const MessageInput = ({
   const renderSentimentIcon = () => {
     if (analyzing) {
       return <Loader2 className="h-5 w-5 animate-spin text-gray-400" />;
+    }
+    
+    if (apiError) {
+      return (
+        <Tooltip content="Sentiment analysis unavailable">
+          <Meh className="h-5 w-5 text-gray-400" />
+        </Tooltip>
+      );
     }
     
     if (!sentiment || message.trim().length <= 10) {

@@ -33,20 +33,23 @@ export const CapsuleCreator = () => {
       return;
     }
     
-    // Only perform sentiment analysis if it hasn't been done yet
+    // Only perform sentiment analysis if it hasn't been done yet and message is not empty
     let sentimentData = sentiment;
-    if (message && !sentimentData) {
+    if (message && !sentimentData && message.trim().length > 10) {
       try {
         sentimentData = await analyzeSentiment(message);
+        // It's fine if sentiment analysis fails, we just won't have sentiment data
       } catch (error) {
         console.error("Error with sentiment analysis:", error);
         // Continue even if sentiment analysis fails
       }
     }
     
-    // Validate sentiment
-    if (!validateSentiment(message, sentimentData)) {
-      return;
+    // If sentiment analysis was performed, validate it
+    if (sentimentData && message) {
+      if (!validateSentiment(message, sentimentData)) {
+        return;
+      }
     }
 
     setLoading(true);

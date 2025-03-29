@@ -26,7 +26,10 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
       body: { text },
     });
 
-    if (error) throw error;
+    if (error) {
+      console.error("Supabase function error:", error);
+      return null;
+    }
     
     return data as SentimentAnalysis;
   } catch (error) {
