@@ -1,10 +1,11 @@
+
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Calendar } from "./ui/calendar";
 import { format } from "date-fns";
-import { CalendarIcon, ImageIcon, Mic, Loader2, X } from "lucide-react";
+import { CalendarIcon, ImageIcon, Loader2, X } from "lucide-react";
 import {
   Popover,
   PopoverContent,
@@ -25,22 +26,14 @@ export const CapsuleCreator = () => {
   const [loading, setLoading] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [previewUrls, setPreviewUrls] = useState<string[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState<string | null>(null);
   
-  const audioRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<BlobPart[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     return () => {
       previewUrls.forEach(url => URL.revokeObjectURL(url));
-      if (audioUrl) URL.revokeObjectURL(audioUrl);
-      if (isRecording && audioRecorderRef.current) {
-        audioRecorderRef.current.stop();
-      }
     };
-  }, [previewUrls, audioUrl, isRecording]);
+  }, [previewUrls]);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -58,52 +51,6 @@ export const CapsuleCreator = () => {
   const removeImage = (index: number) => {
     setPreviewUrls(prev => prev.filter((_, i) => i !== index));
     setFiles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const toggleRecording = async () => {
-    if (isRecording) {
-      if (audioRecorderRef.current) {
-        audioRecorderRef.current.stop();
-      }
-    } else {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        audioRecorderRef.current = mediaRecorder;
-        audioChunksRef.current = [];
-
-        mediaRecorder.ondataavailable = (e) => {
-          if (e.data.size > 0) {
-            audioChunksRef.current.push(e.data);
-          }
-        };
-
-        mediaRecorder.onstop = () => {
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const audioUrl = URL.createObjectURL(audioBlob);
-          setAudioUrl(audioUrl);
-          setIsRecording(false);
-          toast.success("Recording saved!");
-          
-          stream.getTracks().forEach(track => track.stop());
-        };
-
-        mediaRecorder.start();
-        setIsRecording(true);
-        toast.info("Recording started...");
-      } catch (error) {
-        console.error("Error accessing microphone:", error);
-        toast.error("Could not access microphone. Please check permissions.");
-      }
-    }
-  };
-
-  const removeAudio = () => {
-    setAudioUrl(null);
-    if (audioRecorderRef.current && isRecording) {
-      audioRecorderRef.current.stop();
-      setIsRecording(false);
-    }
   };
 
   const validateDateAndTime = (): boolean => {
@@ -130,31 +77,13 @@ export const CapsuleCreator = () => {
     return true;
   };
 
-  const prepareAudioData = async (): Promise<string | null> => {
-    if (!audioUrl) return null;
-    
-    try {
-      const response = await fetch(audioUrl);
-      const blob = await response.blob();
-      return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-      });
-    } catch (error) {
-      console.error("Error preparing audio data:", error);
-      toast.error("Failed to process audio recording");
-      return null;
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateDateAndTime()) return;
     
-    if (!message && !audioUrl && previewUrls.length === 0) {
-      toast.error("Please add a message, audio, or image to your time capsule");
+    if (!message && previewUrls.length === 0) {
+      toast.error("Please add a message or image to your time capsule");
       return;
     }
 
@@ -170,8 +99,6 @@ export const CapsuleCreator = () => {
         revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
       }
 
-      const audioData = await prepareAudioData();
-
       let sentimentData = null;
       if (message) {
         try {
@@ -184,11 +111,11 @@ export const CapsuleCreator = () => {
       }
 
       const { error } = await supabase.from("time_capsules").insert({
-        message: message || (audioData ? "Audio Message" : ""),
+        message: message || "",
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0] || null,
-        audio_url: audioData,
+        audio_url: null,
         sentiment: sentimentData ? JSON.stringify(sentimentData) : null,
       });
 
@@ -201,7 +128,6 @@ export const CapsuleCreator = () => {
       setMessage("");
       setFiles([]);
       setPreviewUrls([]);
-      setAudioUrl(null);
       
       await fetchCapsules();
       navigate("/");
@@ -223,16 +149,6 @@ export const CapsuleCreator = () => {
             onChange={(e) => setMessage(e.target.value)}
           />
           <div className="absolute bottom-4 right-4 flex space-x-2">
-            <Button 
-              type="button" 
-              variant="ghost" 
-              size="icon"
-              onClick={toggleRecording}
-              className={isRecording ? "text-red-500" : ""}
-            >
-              <Mic className={`h-5 w-5 ${isRecording ? "text-red-500" : ""}`} />
-            </Button>
-            
             <Button type="button" variant="ghost" size="icon" onClick={() => fileInputRef.current?.click()}>
               <ImageIcon className="h-5 w-5" />
             </Button>
@@ -246,18 +162,6 @@ export const CapsuleCreator = () => {
             />
           </div>
         </div>
-        
-        {audioUrl && (
-          <div className="p-3 bg-accent rounded-md flex justify-between items-center">
-            <div className="flex items-center">
-              <Mic className="mr-2 h-4 w-4" />
-              <p className="text-sm">Audio recorded successfully</p>
-            </div>
-            <Button variant="ghost" size="icon" onClick={removeAudio}>
-              <X className="h-4 w-4" />
-            </Button>
-          </div>
-        )}
         
         {previewUrls.length > 0 && (
           <div className="grid grid-cols-3 gap-2">
