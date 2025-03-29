@@ -12,15 +12,23 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   }
 });
 
+// Type for sentiment analysis response
+export interface SentimentAnalysis {
+  sentiment: string;
+  score: number;
+  analysis: any;
+}
+
 // Function to analyze sentiment using the edge function
-export const analyzeSentiment = async (text: string) => {
+export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis | null> => {
   try {
     const { data, error } = await supabase.functions.invoke("analyze-sentiment", {
       body: { text },
     });
 
     if (error) throw error;
-    return data.sentiment;
+    
+    return data as SentimentAnalysis;
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
     return null;

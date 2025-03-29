@@ -31,7 +31,10 @@ serve(async (req) => {
       );
     }
 
+    console.log("Analyzing sentiment for text:", text.substring(0, 50) + (text.length > 50 ? "..." : ""));
+
     // Call Hugging Face API for sentiment analysis
+    // Using distilbert-base-uncased-finetuned-sst-2-english which is optimized for sentiment analysis
     const response = await fetch(
       "https://api-inference.huggingface.co/models/distilbert-base-uncased-finetuned-sst-2-english",
       {
@@ -44,10 +47,37 @@ serve(async (req) => {
       }
     );
 
+    if (!response.ok) {
+      const errorData = await response.text();
+      console.error("Hugging Face API error:", errorData);
+      throw new Error(`Hugging Face API error: ${response.status} ${response.statusText}`);
+    }
+
     const result = await response.json();
+    console.log("Sentiment analysis result:", JSON.stringify(result));
+    
+    // Process the result to get a simplified format
+    let sentimentData = {
+      sentiment: "neutral",
+      score: 0.5,
+      analysis: result
+    };
+    
+    // The model returns an array of objects with label and score
+    if (Array.isArray(result) && result.length > 0) {
+      // Find the label with the highest score
+      const sortedSentiments = [...result[0]].sort((a, b) => b.score - a.score);
+      const topSentiment = sortedSentiments[0];
+      
+      sentimentData = {
+        sentiment: topSentiment.label.toLowerCase(),
+        score: topSentiment.score,
+        analysis: result
+      };
+    }
     
     return new Response(
-      JSON.stringify({ sentiment: result }),
+      JSON.stringify(sentimentData),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }

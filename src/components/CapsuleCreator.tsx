@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import { supabase, analyzeSentiment } from "@/integrations/supabase/client";
+import { supabase, analyzeSentiment, SentimentAnalysis } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { MessageInput } from "./capsule/MessageInput";
 import { DateTimeSelector } from "./capsule/DateTimeSelector";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { validateDateAndTime } from "@/utils/validation";
+import { validateDateAndTime, validateSentiment } from "@/utils/validation";
 
 export const CapsuleCreator = () => {
   const navigate = useNavigate();
@@ -19,6 +19,7 @@ export const CapsuleCreator = () => {
   const [time, setTime] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
   
   const { files, previewUrls, handleFileUpload, removeImage } = useFileUpload();
 
@@ -29,6 +30,22 @@ export const CapsuleCreator = () => {
     
     if (!message && previewUrls.length === 0) {
       toast.error("Please add a message or image to your time capsule");
+      return;
+    }
+    
+    // Only perform sentiment analysis if it hasn't been done yet
+    let sentimentData = sentiment;
+    if (message && !sentimentData) {
+      try {
+        sentimentData = await analyzeSentiment(message);
+      } catch (error) {
+        console.error("Error with sentiment analysis:", error);
+        // Continue even if sentiment analysis fails
+      }
+    }
+    
+    // Validate sentiment
+    if (!validateSentiment(message, sentimentData)) {
       return;
     }
 
@@ -42,17 +59,6 @@ export const CapsuleCreator = () => {
       if (time) {
         const [hours, minutes] = time.split(':');
         revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-      }
-
-      let sentimentData = null;
-      if (message) {
-        try {
-          sentimentData = await analyzeSentiment(message);
-          console.log("Sentiment analysis result:", sentimentData);
-        } catch (sentimentError) {
-          console.error("Error with sentiment analysis:", sentimentError);
-          // Continue even if sentiment analysis fails
-        }
       }
 
       const { error } = await supabase.from("time_capsules").insert({
@@ -71,6 +77,7 @@ export const CapsuleCreator = () => {
       setDate(undefined);
       setTime("");
       setMessage("");
+      setSentiment(null);
       
       await fetchCapsules();
       navigate("/");
