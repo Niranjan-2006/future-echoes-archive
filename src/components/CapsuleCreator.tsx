@@ -69,8 +69,6 @@ export const CapsuleCreator = () => {
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0] || null,
-        audio_url: null,
-        sentiment: sentimentData ? JSON.stringify(sentimentData) : null,
       });
 
       if (error) throw error;
