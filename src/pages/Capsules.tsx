@@ -11,8 +11,8 @@ import { Clock, Unlock } from "lucide-react";
 const Capsules = () => {
   const { capsules, loading, error, fetchCapsules } = useCapsules();
   const navigate = useNavigate();
-  const [now] = useState(new Date());
-
+  // Move date calculation inside the filter function to ensure it's always current
+  
   useEffect(() => {
     fetchCapsules();
   }, [fetchCapsules]);
@@ -21,10 +21,11 @@ const Capsules = () => {
     navigate("/create");
   };
 
-  // Filter capsules to only show revealed ones
-  const revealedCapsules = capsules.filter(capsule => 
-    new Date(capsule.reveal_date) <= now || capsule.is_revealed
-  );
+  // Filter capsules to only show revealed ones with current time
+  const revealedCapsules = capsules.filter(capsule => {
+    const now = new Date(); // Get current time for each evaluation
+    return new Date(capsule.reveal_date) <= now || capsule.is_revealed;
+  });
 
   return (
     <main className="min-h-screen bg-background pt-16">
