@@ -4,12 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "./ImageUploader";
 import { SentimentAnalysis, analyzeSentiment } from "@/integrations/supabase/client";
 import { Smile, Meh, Frown, Loader2 } from "lucide-react";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger
-} from "@/components/ui/tooltip";
+import { Tooltip } from "@/components/ui/tooltip";
 
 interface MessageInputProps {
   message: string;
@@ -79,16 +74,9 @@ export const MessageInput = ({
     
     if (apiError) {
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Meh className="h-5 w-5 text-gray-400" />
-            </TooltipTrigger>
-            <TooltipContent>
-              Sentiment analysis unavailable
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip content="Sentiment analysis unavailable">
+          <Meh className="h-5 w-5 text-gray-400" />
+        </Tooltip>
       );
     }
     
@@ -98,42 +86,21 @@ export const MessageInput = ({
     
     if (sentiment.sentiment === "positive" || sentiment.sentiment === "POSITIVE") {
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Smile className="h-5 w-5 text-green-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              Positive sentiment detected
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip content="Positive sentiment detected">
+          <Smile className="h-5 w-5 text-green-500" />
+        </Tooltip>
       );
     } else if (sentiment.sentiment === "negative" || sentiment.sentiment === "NEGATIVE") {
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Frown className="h-5 w-5 text-red-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              Negative sentiment detected
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip content="Negative sentiment detected">
+          <Frown className="h-5 w-5 text-red-500" />
+        </Tooltip>
       );
     } else {
       return (
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Meh className="h-5 w-5 text-yellow-500" />
-            </TooltipTrigger>
-            <TooltipContent>
-              Neutral sentiment detected
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Tooltip content="Neutral sentiment detected">
+          <Meh className="h-5 w-5 text-yellow-500" />
+        </Tooltip>
       );
     }
   };
