@@ -32,6 +32,7 @@ serve(async (req) => {
     }
 
     console.log("Analyzing sentiment for text:", text.substring(0, 50) + (text.length > 50 ? "..." : ""));
+    console.log("Using Hugging Face API with valid key:", !!HUGGING_FACE_API_KEY);
 
     // Call Hugging Face API for sentiment analysis
     // Using distilbert-base-uncased-finetuned-sst-2-english which is optimized for sentiment analysis

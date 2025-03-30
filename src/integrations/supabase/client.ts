@@ -22,6 +22,8 @@ export interface SentimentAnalysis {
 // Function to analyze sentiment using the edge function
 export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis | null> => {
   try {
+    console.log("Calling sentiment analysis function for text:", text.substring(0, 30) + "...");
+    
     const { data, error } = await supabase.functions.invoke("analyze-sentiment", {
       body: { text },
     });
@@ -31,6 +33,12 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
       return null;
     }
     
+    if (!data) {
+      console.error("No data returned from sentiment analysis function");
+      return null;
+    }
+    
+    console.log("Sentiment analysis results:", data);
     return data as SentimentAnalysis;
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
