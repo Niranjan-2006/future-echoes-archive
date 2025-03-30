@@ -11,7 +11,7 @@ import {
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { LogOut } from "lucide-react";
+import { Clock, LogOut } from "lucide-react";
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -42,7 +42,8 @@ export const Navigation = () => {
                     className={navigationMenuTriggerStyle()}
                     onClick={() => navigate("/capsules")}
                   >
-                    Your Capsules
+                    <Clock className="mr-1 h-4 w-4" />
+                    Revealed Capsules
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
