@@ -11,6 +11,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CreateCapsule from "./pages/CreateCapsule";
+import Capsules from "./pages/Capsules";
 
 const queryClient = new QueryClient();
 
@@ -48,6 +49,10 @@ const App = () => {
               <Route
                 path="/create"
                 element={isAuthenticated ? <CreateCapsule /> : <Navigate to="/auth" />}
+              />
+              <Route
+                path="/capsules"
+                element={isAuthenticated ? <Capsules /> : <Navigate to="/auth" />}
               />
               <Route
                 path="/auth"

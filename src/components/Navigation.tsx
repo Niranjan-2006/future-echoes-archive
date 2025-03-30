@@ -1,4 +1,13 @@
 
+import {
+  NavigationMenu,
+  NavigationMenuContent,
+  NavigationMenuItem,
+  NavigationMenuLink,
+  NavigationMenuList,
+  NavigationMenuTrigger,
+  navigationMenuTriggerStyle,
+} from "@/components/ui/navigation-menu";
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,9 +27,26 @@ export const Navigation = () => {
         <div className="flex items-center space-x-8">
           <h1 className="text-xl font-bold">Future Echoes</h1>
           <div className="hidden md:flex space-x-4">
-            <Button variant="ghost" onClick={() => navigate("/")}>
-              Home
-            </Button>
+            <NavigationMenu>
+              <NavigationMenuList>
+                <NavigationMenuItem>
+                  <NavigationMenuLink 
+                    className={navigationMenuTriggerStyle()}
+                    onClick={() => navigate("/")}
+                  >
+                    Home
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink 
+                    className={navigationMenuTriggerStyle()}
+                    onClick={() => navigate("/capsules")}
+                  >
+                    Your Capsules
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+              </NavigationMenuList>
+            </NavigationMenu>
           </div>
         </div>
         <Button variant="ghost" size="icon" onClick={handleSignOut}>
