@@ -3,6 +3,9 @@
 create extension if not exists pg_cron;
 create extension if not exists pg_net;
 
+-- Drop existing schedule if exists (to avoid duplicate schedules)
+select cron.unschedule('check-reveals-hourly');
+
 -- Schedule the function to run every hour
 select cron.schedule(
   'check-reveals-hourly',
@@ -16,3 +19,11 @@ select cron.schedule(
     ) as request_id;
   $$
 );
+
+-- Add a debugging trigger to run immediately for testing (can be removed later)
+select
+  net.http_post(
+    url:='https://cnongijjpbsgysdophin.supabase.co/functions/v1/check-reveals',
+    headers:='{"Content-Type": "application/json", "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNub25naWpqcGJzZ3lzZG9waGluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDAxNDM4MDQsImV4cCI6MjA1NTcxOTgwNH0.pomn_hxQ2cLe4At-42YqJsSSeGZMMDvwuI6bbwhq6VA"}'::jsonb,
+    body:='{}'::jsonb
+  ) as immediate_request_id;

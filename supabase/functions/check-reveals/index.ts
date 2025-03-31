@@ -13,34 +13,52 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Starting check-reveals function...")
+    
+    // Initialize Supabase client with the service role key for admin access
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
     const now = new Date()
+    console.log(`Current time: ${now.toISOString()}`)
     
     // Get newly revealed capsules (ones that should be revealed but aren't marked as revealed yet)
     const { data: capsulesToReveal, error: fetchError } = await supabase
       .from('time_capsules')
-      .select('*, auth.users!inner(email, raw_user_meta_data)')
+      .select('*, profiles!inner(*), auth.users!inner(email, raw_user_meta_data)')
       .eq('is_revealed', false)
       .lte('reveal_date', now.toISOString())
     
-    if (fetchError) throw fetchError
+    if (fetchError) {
+      console.error("Error fetching capsules to reveal:", fetchError)
+      throw fetchError
+    }
+    
+    console.log(`Found ${capsulesToReveal?.length || 0} capsules to reveal`)
     
     // Update capsules to mark them as revealed
     if (capsulesToReveal && capsulesToReveal.length > 0) {
+      console.log("Updating capsules to mark them as revealed")
+      
       const { error: updateError } = await supabase
         .from('time_capsules')
         .update({ is_revealed: true })
         .in('id', capsulesToReveal.map(capsule => capsule.id))
       
-      if (updateError) throw updateError
+      if (updateError) {
+        console.error("Error updating capsules:", updateError)
+        throw updateError
+      }
+      
+      console.log("Successfully marked capsules as revealed")
       
       // Send email notifications for each revealed capsule
       if (capsulesToReveal.length > 0) {
         try {
+          console.log("Preparing to send email notifications...")
+          
           const emailPromises = capsulesToReveal.map(async (capsule) => {
             // Format reveals for better readability in email
             const revealDate = new Date(capsule.reveal_date)
@@ -60,12 +78,16 @@ serve(async (req) => {
               return
             }
 
-            // Construct app URL for capsule link
-            const appURL = new URL(req.url).origin.replace('functions', 'app')
+            console.log(`Preparing email for user: ${userName} (${userEmail}) for capsule ID: ${capsule.id}`)
+
+            // Construct app URL for capsule link - fix the URL construction
+            const appURL = "https://futurechoes.app"
             const capsuleLink = `${appURL}/capsules`
             
+            console.log(`Sending notification with capsule link: ${capsuleLink}`)
+            
             // Call the send-capsule-notification function to send the email
-            await supabase.functions.invoke('send-capsule-notification', {
+            const { data, error } = await supabase.functions.invoke('send-capsule-notification', {
               body: {
                 userName,
                 email: userEmail,
@@ -74,15 +96,23 @@ serve(async (req) => {
               }
             })
             
-            console.log(`Email notification sent for capsule ID: ${capsule.id} to user: ${userEmail}`)
+            if (error) {
+              console.error(`Error invoking send-capsule-notification for user ${userEmail}:`, error)
+              throw error
+            }
+            
+            console.log(`Email notification sent for capsule ID: ${capsule.id} to user: ${userEmail}`, data)
           })
           
           await Promise.all(emailPromises)
+          console.log("All email notifications sent successfully")
         } catch (emailError) {
           console.error("Error sending email notifications:", emailError)
           // Continue execution even if email sending fails
         }
       }
+    } else {
+      console.log("No capsules need to be revealed at this time")
     }
 
     return new Response(JSON.stringify({ 

@@ -23,16 +23,28 @@ serve(async (req) => {
   }
 
   try {
+    console.log("Starting send-capsule-notification function...")
+    
     const { userName, email, revealDate, capsuleLink }: NotificationRequest = await req.json()
     
     if (!email) {
+      console.error("Email address is required")
       throw new Error("Email address is required")
     }
     
-    console.log(`Sending capsule notification email to: ${email}`)
+    console.log(`Sending capsule notification email to: ${email} for user: ${userName}`)
+    console.log(`Email parameters - Reveal date: ${revealDate}, Capsule link: ${capsuleLink}`)
+    
+    // Check if we have a valid API key
+    const apiKey = Deno.env.get("RESEND_API_KEY")
+    if (!apiKey) {
+      console.error("Missing Resend API key")
+      throw new Error("Missing Resend API key")
+    }
+    console.log("Resend API key is configured")
     
     const { data, error } = await resend.emails.send({
-      from: "Future Echoes <notifications@resend.dev>",
+      from: "Future Echoes <notifications@futurechoes.app>",
       to: email,
       subject: "Your Virtual Capsule is now revealed!",
       html: `
