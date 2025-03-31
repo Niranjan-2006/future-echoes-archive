@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "./ImageUploader";
 import { SentimentAnalysis, analyzeSentiment } from "@/integrations/supabase/client";
@@ -23,25 +23,39 @@ export const MessageInput = ({
 }: MessageInputProps) => {
   const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [debounceTimeout, setDebounceTimeout] = useState<NodeJS.Timeout | null>(null);
   const [apiError, setApiError] = useState(false);
+  const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
+  // Add lastAnalyzedText to prevent redundant calls
+  const lastAnalyzedText = useRef<string>("");
 
-  // Analyze sentiment with debounce
+  // Analyze sentiment with improved debounce
   useEffect(() => {
-    if (message.trim().length > 10) {
+    // Only analyze if message is sufficiently different from last analyzed text
+    // and is longer than 10 characters
+    const trimmedMessage = message.trim();
+    
+    if (trimmedMessage.length > 10 && 
+        Math.abs(trimmedMessage.length - lastAnalyzedText.current.length) > 5) {
+      
       // Cancel previous timeout
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
       }
       
-      // Set new timeout to analyze sentiment after 1 second of no typing
+      // Set a longer timeout to avoid too many API calls
       const timeout = setTimeout(async () => {
+        // Don't analyze if message is identical to last analyzed (even after debounce)
+        if (trimmedMessage === lastAnalyzedText.current) {
+          return;
+        }
+        
         setAnalyzing(true);
         setApiError(false);
         try {
-          const result = await analyzeSentiment(message);
+          const result = await analyzeSentiment(trimmedMessage);
           if (result) {
             setSentiment(result);
+            lastAnalyzedText.current = trimmedMessage;
           } else {
             setApiError(true);
           }
@@ -51,17 +65,15 @@ export const MessageInput = ({
         } finally {
           setAnalyzing(false);
         }
-      }, 1000);
+      }, 1500); // Increased from 1000ms to 1500ms to further reduce calls
       
-      setDebounceTimeout(timeout);
-    } else {
-      setSentiment(null);
+      debounceTimeout.current = timeout;
     }
     
     // Clean up on unmount
     return () => {
-      if (debounceTimeout) {
-        clearTimeout(debounceTimeout);
+      if (debounceTimeout.current) {
+        clearTimeout(debounceTimeout.current);
       }
     };
   }, [message]);

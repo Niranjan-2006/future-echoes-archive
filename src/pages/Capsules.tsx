@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -7,25 +7,31 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Clock, Unlock } from "lucide-react";
-import { Skeleton } from "@/components/ui/skeleton";
 
 const Capsules = () => {
   const { capsules, loading, error, fetchCapsules } = useCapsules();
   const navigate = useNavigate();
+  const [revealedCapsules, setRevealedCapsules] = useState<any[]>([]);
   
+  // Filter capsules only when the capsules array changes
+  useEffect(() => {
+    const now = new Date();
+    // Filter capsules to only show revealed ones with current time
+    const revealed = capsules.filter(capsule => 
+      new Date(capsule.reveal_date) <= now || capsule.is_revealed
+    );
+    setRevealedCapsules(revealed);
+  }, [capsules]);
+  
+  // Fetch capsules only once when the component mounts
   useEffect(() => {
     fetchCapsules();
+    // No dependency array needed as we only want to fetch once
   }, [fetchCapsules]);
 
   const handleCreateNew = () => {
     navigate("/create");
   };
-
-  // Filter capsules to only show revealed ones with current time
-  const revealedCapsules = capsules.filter(capsule => {
-    const now = new Date(); // Get current time for each evaluation
-    return new Date(capsule.reveal_date) <= now || capsule.is_revealed;
-  });
 
   return (
     <main className="min-h-screen bg-background pt-16">

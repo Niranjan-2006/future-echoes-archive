@@ -13,26 +13,54 @@ import NotFound from "./pages/NotFound";
 import CreateCapsule from "./pages/CreateCapsule";
 import Capsules from "./pages/Capsules";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  // Configure React Query to reduce network requests
+  defaultOptions: {
+    queries: {
+      staleTime: 60000, // Data stays fresh for 1 minute
+      cacheTime: 300000, // Cache is kept for 5 minutes
+      retry: 1, // Only retry failed requests once
+      refetchOnWindowFocus: false, // Don't refetch when window regains focus
+    },
+  },
+});
 
 const App = () => {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
   useEffect(() => {
-    // Check current session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setIsAuthenticated(!!session);
-    });
+    // Check current session just once on initial load
+    const checkInitialSession = async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        setIsAuthenticated(!!session);
+      } catch (error) {
+        console.error("Error checking session:", error);
+        setIsAuthenticated(false);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
 
-    // Listen for auth changes
+    checkInitialSession();
+
+    // Listen for auth changes without unnecessary rerenders
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      setIsAuthenticated(!!session);
+      if (["SIGNED_IN", "TOKEN_REFRESHED"].includes(event)) {
+        setIsAuthenticated(true);
+      } else if (event === "SIGNED_OUT") {
+        setIsAuthenticated(false);
+      }
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  if (isAuthenticated === null) return null;
+  // Show nothing while checking auth to prevent flashing of login screen
+  if (isCheckingAuth) return null;
 
   return (
     <QueryClientProvider client={queryClient}>
