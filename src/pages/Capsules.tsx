@@ -7,11 +7,11 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { Clock, Unlock } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const Capsules = () => {
   const { capsules, loading, error, fetchCapsules } = useCapsules();
   const navigate = useNavigate();
-  // Move date calculation inside the filter function to ensure it's always current
   
   useEffect(() => {
     fetchCapsules();
@@ -32,28 +32,26 @@ const Capsules = () => {
       <Navigation />
       <div className="container mx-auto p-4 lg:p-8">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Revealed Time Capsules</h1>
+          <h1 className="text-3xl font-bold">Revealed Virtual Capsules</h1>
           <Button onClick={handleCreateNew}>Create New Capsule</Button>
         </div>
-
-        {loading && <p className="text-center py-8">Loading your time capsules...</p>}
         
         {error && (
           <div className="text-center text-red-500 py-8">
-            <p>Error loading time capsules: {error}</p>
+            <p>Error loading virtual capsules: {error}</p>
             <Button className="mt-4" onClick={fetchCapsules}>Try Again</Button>
           </div>
         )}
 
-        {!loading && !error && revealedCapsules.length === 0 && (
+        {!error && revealedCapsules.length === 0 && (
           <div className="text-center py-12">
-            <h2 className="text-2xl font-medium mb-4">No revealed time capsules yet</h2>
-            <p className="text-muted-foreground mb-6">You don't have any revealed time capsules yet. They will appear here when their reveal date is reached.</p>
-            <Button onClick={handleCreateNew}>Create a Time Capsule</Button>
+            <h2 className="text-2xl font-medium mb-4">No revealed virtual capsules yet</h2>
+            <p className="text-muted-foreground mb-6">You don't have any revealed virtual capsules yet. They will appear here when their reveal date is reached.</p>
+            <Button onClick={handleCreateNew}>Create a Virtual Capsule</Button>
           </div>
         )}
 
-        {!loading && !error && revealedCapsules.length > 0 && (
+        {!error && revealedCapsules.length > 0 && (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {revealedCapsules.map((capsule) => (
               <Card key={capsule.id} className="overflow-hidden">

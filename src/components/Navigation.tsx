@@ -43,7 +43,7 @@ export const Navigation = () => {
                     onClick={() => navigate("/capsules")}
                   >
                     <Clock className="mr-1 h-4 w-4" />
-                    Revealed Capsules
+                    Revealed Virtual Capsules
                   </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
