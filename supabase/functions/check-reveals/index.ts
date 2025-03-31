@@ -20,20 +20,80 @@ serve(async (req) => {
 
     const now = new Date()
     
-    // Update capsules that should be revealed
-    const { error } = await supabase
+    // Get newly revealed capsules (ones that should be revealed but aren't marked as revealed yet)
+    const { data: capsulesToReveal, error: fetchError } = await supabase
       .from('time_capsules')
-      .update({ is_revealed: true })
+      .select('*, auth.users!inner(email, raw_user_meta_data)')
       .eq('is_revealed', false)
       .lte('reveal_date', now.toISOString())
+    
+    if (fetchError) throw fetchError
+    
+    // Update capsules to mark them as revealed
+    if (capsulesToReveal && capsulesToReveal.length > 0) {
+      const { error: updateError } = await supabase
+        .from('time_capsules')
+        .update({ is_revealed: true })
+        .in('id', capsulesToReveal.map(capsule => capsule.id))
+      
+      if (updateError) throw updateError
+      
+      // Send email notifications for each revealed capsule
+      if (capsulesToReveal.length > 0) {
+        try {
+          const emailPromises = capsulesToReveal.map(async (capsule) => {
+            // Format reveals for better readability in email
+            const revealDate = new Date(capsule.reveal_date)
+            const formattedRevealDate = revealDate.toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })
+            
+            // Get user information
+            const user = capsule.users
+            const userName = user?.raw_user_meta_data?.name || 'there'
+            const userEmail = user?.email
+            
+            if (!userEmail) {
+              console.error(`No email found for user related to capsule ID: ${capsule.id}`)
+              return
+            }
 
-    if (error) throw error
+            // Construct app URL for capsule link
+            const appURL = new URL(req.url).origin.replace('functions', 'app')
+            const capsuleLink = `${appURL}/capsules`
+            
+            // Call the send-capsule-notification function to send the email
+            await supabase.functions.invoke('send-capsule-notification', {
+              body: {
+                userName,
+                email: userEmail,
+                revealDate: formattedRevealDate,
+                capsuleLink
+              }
+            })
+            
+            console.log(`Email notification sent for capsule ID: ${capsule.id} to user: ${userEmail}`)
+          })
+          
+          await Promise.all(emailPromises)
+        } catch (emailError) {
+          console.error("Error sending email notifications:", emailError)
+          // Continue execution even if email sending fails
+        }
+      }
+    }
 
-    return new Response(JSON.stringify({ message: 'Reveals checked successfully' }), {
+    return new Response(JSON.stringify({ 
+      message: 'Reveals checked successfully',
+      revealed_count: capsulesToReveal ? capsulesToReveal.length : 0
+    }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 200,
     })
   } catch (error) {
+    console.error("Error in check-reveals function:", error)
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
