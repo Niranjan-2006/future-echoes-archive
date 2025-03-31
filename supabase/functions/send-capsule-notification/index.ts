@@ -1,5 +1,6 @@
 
-import { createClient } from '@supabase/supabase-js';
+// Import from npm registry using Deno's npm: specifier
+import { createClient } from 'npm:@supabase/supabase-js@2.39.8';
 import { format } from 'https://deno.land/x/date_fns@v2.22.1/index.js';
 
 // Define the interface for request payload

@@ -1,5 +1,6 @@
 
-import { createClient } from '@supabase/supabase-js';
+// Import from npm registry using Deno's npm: specifier
+import { createClient } from 'npm:@supabase/supabase-js@2.39.8';
 
 // Define the interface for time capsules
 interface TimeCapsule {
@@ -90,30 +91,16 @@ Deno.serve(async (req) => {
         }
 
         // Get user information for email notification
-        const { data: userData, error: userError } = await supabase
-          .from('auth.users')  // This will likely fail with RLS, but we'll try a different approach
-          .select('email')
-          .eq('id', capsule.user_id)
-          .single();
-
-        let userEmail = null;
+        const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
+          capsule.user_id
+        );
         
-        // If the direct approach fails, try using the auth API
-        if (userError || !userData) {
-          console.log('Falling back to auth.admin.getUserById');
-          const { data: user, error: authError } = await supabase.auth.admin.getUserById(
-            capsule.user_id
-          );
-          
-          if (authError || !user) {
-            console.error(`Error fetching user data for ${capsule.user_id}:`, authError || 'No user found');
-            continue;  // Skip to next capsule
-          }
-          
-          userEmail = user.user.email;
-        } else {
-          userEmail = userData.email;
+        if (userError || !userData || !userData.user) {
+          console.error(`Error fetching user data for ${capsule.user_id}:`, userError || 'No user found');
+          continue;  // Skip to next capsule
         }
+        
+        const userEmail = userData.user.email;
         
         if (!userEmail) {
           console.error(`No email found for user ${capsule.user_id}`);
