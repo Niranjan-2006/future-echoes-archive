@@ -29,7 +29,7 @@ export const CapsuleCreator = () => {
     if (!validateDateAndTime(date, time)) return;
     
     if (!message && previewUrls.length === 0) {
-      toast.error("Please add a message or image to your time capsule");
+      toast.error("Please add a message or image to your virtual capsule");
       return;
     }
     
@@ -76,7 +76,7 @@ export const CapsuleCreator = () => {
 
       if (error) throw error;
       
-      toast.success("Time capsule created successfully!");
+      toast.success("Virtual capsule created successfully!");
       
       setDate(undefined);
       setTime("");
@@ -128,7 +128,7 @@ export const CapsuleCreator = () => {
                 Creating...
               </>
             ) : (
-              "Create Time Capsule"
+              "Create Virtual Capsule"
             )}
           </Button>
         </div>

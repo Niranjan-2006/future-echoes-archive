@@ -68,6 +68,13 @@ const Capsules = () => {
       if (error) throw error;
       
       toast.success("Virtual capsule deleted successfully");
+      
+      // Immediately update the local state to remove the deleted capsule
+      setRevealedCapsules(prevCapsules => 
+        prevCapsules.filter(capsule => capsule.id !== selectedCapsule.id)
+      );
+      
+      // Also fetch fresh data from the server
       await fetchCapsules();
       setShowDeleteConfirm(false);
     } catch (error: any) {
