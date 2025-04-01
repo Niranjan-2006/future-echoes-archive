@@ -67,7 +67,7 @@ const Capsules = () => {
       
       if (error) throw error;
       
-      toast.success("Time capsule deleted successfully");
+      toast.success("Virtual capsule deleted successfully");
       await fetchCapsules();
       setShowDeleteConfirm(false);
     } catch (error: any) {
@@ -183,7 +183,7 @@ const Capsules = () => {
           <DialogHeader>
             <DialogTitle>Sentiment Analysis Report</DialogTitle>
             <DialogDescription>
-              This report shows the sentiment analysis of your time capsule message.
+              This report shows the sentiment analysis of your virtual capsule message.
             </DialogDescription>
           </DialogHeader>
           
@@ -219,9 +219,9 @@ const Capsules = () => {
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Time Capsule</DialogTitle>
+            <DialogTitle>Delete Virtual Capsule</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this time capsule? This action cannot be undone.
+              Are you sure you want to delete this virtual capsule? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           

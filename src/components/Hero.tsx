@@ -23,7 +23,7 @@ export const Hero = () => {
           Preserve Your Moments in Time
         </h1>
         <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto">
-          Create digital time capsules filled with your memories, thoughts, and emotions.
+          Create digital virtual capsules filled with your memories, thoughts, and emotions.
           Set a future date and rediscover them when the time comes.
         </p>
         <Button
@@ -31,7 +31,7 @@ export const Hero = () => {
           className="mt-8 hover-scale group"
           onClick={handleCreateCapsule}
         >
-          Create Your Time Capsule
+          Create Your Virtual Capsule
           <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-2 transition-transform" />
         </Button>
       </motion.div>
