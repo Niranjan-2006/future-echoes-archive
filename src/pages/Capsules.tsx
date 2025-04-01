@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
@@ -6,7 +5,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
-import { Clock, Unlock, FileText, Trash2 } from "lucide-react";
+import { Clock, Unlock, FileText, Trash2, Loader2 } from "lucide-react";
 import { 
   Dialog,
   DialogContent,
@@ -27,17 +26,14 @@ const Capsules = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
-  // Filter capsules only when the capsules array changes
   useEffect(() => {
     const now = new Date();
-    // Filter capsules to only show revealed ones with current time
     const revealed = capsules.filter(capsule => 
       new Date(capsule.reveal_date) <= now || capsule.is_revealed
     );
     setRevealedCapsules(revealed);
   }, [capsules]);
   
-  // Fetch capsules only once when the component mounts
   useEffect(() => {
     fetchCapsules();
   }, [fetchCapsules]);
@@ -78,7 +74,6 @@ const Capsules = () => {
     }
   };
 
-  // Format the sentiment data for display
   const formatSentiment = (capsule: any) => {
     if (!capsule || !capsule.sentiment_data) {
       return { label: "Not analyzed", color: "text-gray-500" };
@@ -180,7 +175,6 @@ const Capsules = () => {
         )}
       </div>
 
-      {/* Sentiment Report Dialog */}
       <Dialog open={showReportDialog} onOpenChange={setShowReportDialog}>
         <DialogContent>
           <DialogHeader>
@@ -219,7 +213,6 @@ const Capsules = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
         <DialogContent>
           <DialogHeader>
