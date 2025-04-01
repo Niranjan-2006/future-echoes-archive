@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
@@ -35,8 +36,10 @@ const Capsules = () => {
   }, [capsules]);
   
   useEffect(() => {
+    // Only fetch once when the component mounts
     fetchCapsules();
-  }, [fetchCapsules]);
+    // Don't add fetchCapsules to the dependency array to prevent re-fetching
+  }, []);
 
   const handleCreateNew = () => {
     navigate("/create");
