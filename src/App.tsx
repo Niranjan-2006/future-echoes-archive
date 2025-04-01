@@ -18,7 +18,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 60000, // Data stays fresh for 1 minute
-      cacheTime: 300000, // Cache is kept for 5 minutes
+      gcTime: 300000, // Cache is kept for 5 minutes (formerly cacheTime)
       retry: 1, // Only retry failed requests once
       refetchOnWindowFocus: false, // Don't refetch when window regains focus
     },
