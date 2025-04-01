@@ -63,3 +63,19 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
     return null;
   }
 };
+
+// Store sentiment results with the capsule
+export const storeSentimentWithCapsule = async (capsuleId: string, sentiment: SentimentAnalysis): Promise<void> => {
+  try {
+    const { error } = await supabase
+      .from('time_capsules')
+      .update({ sentiment_data: JSON.stringify(sentiment) })
+      .eq('id', capsuleId);
+      
+    if (error) {
+      console.error("Error storing sentiment data:", error);
+    }
+  } catch (error) {
+    console.error("Error updating capsule with sentiment:", error);
+  }
+};

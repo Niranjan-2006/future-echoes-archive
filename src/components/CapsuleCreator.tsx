@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import { supabase, analyzeSentiment, SentimentAnalysis } from "@/integrations/supabase/client";
+import { supabase, analyzeSentiment, SentimentAnalysis, storeSentimentWithCapsule } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { MessageInput } from "./capsule/MessageInput";
@@ -37,6 +37,7 @@ export const CapsuleCreator = () => {
     let sentimentData = sentiment;
     if (message && !sentimentData && message.trim().length > 10) {
       try {
+        setLoading(true);
         sentimentData = await analyzeSentiment(message);
         // It's fine if sentiment analysis fails, we just won't have sentiment data
       } catch (error) {
@@ -48,6 +49,7 @@ export const CapsuleCreator = () => {
     // If sentiment analysis was performed, validate it
     if (sentimentData && message) {
       if (!validateSentiment(message, sentimentData)) {
+        setLoading(false);
         return;
       }
     }
@@ -64,12 +66,13 @@ export const CapsuleCreator = () => {
         revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
       }
 
-      const { error } = await supabase.from("time_capsules").insert({
+      const { data, error } = await supabase.from("time_capsules").insert({
         message: message || "",
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0] || null,
-      });
+        sentiment_data: sentimentData ? JSON.stringify(sentimentData) : null
+      }).select('id').single();
 
       if (error) throw error;
       

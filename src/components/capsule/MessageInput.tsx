@@ -3,8 +3,7 @@ import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "./ImageUploader";
 import { SentimentAnalysis, analyzeSentiment } from "@/integrations/supabase/client";
-import { Smile, Meh, Frown, Loader2 } from "lucide-react";
-import { Tooltip } from "@/components/ui/tooltip";
+import { Loader2 } from "lucide-react";
 
 interface MessageInputProps {
   message: string;
@@ -25,7 +24,6 @@ export const MessageInput = ({
   const [analyzing, setAnalyzing] = useState(false);
   const [apiError, setApiError] = useState(false);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
-  // Add lastAnalyzedText to prevent redundant calls
   const lastAnalyzedText = useRef<string>("");
 
   // Analyze sentiment with improved debounce
@@ -65,7 +63,7 @@ export const MessageInput = ({
         } finally {
           setAnalyzing(false);
         }
-      }, 1500); // Increased from 1000ms to 1500ms to further reduce calls
+      }, 1500); 
       
       debounceTimeout.current = timeout;
     }
@@ -78,45 +76,6 @@ export const MessageInput = ({
     };
   }, [message]);
 
-  // Render sentiment icon based on the analysis
-  const renderSentimentIcon = () => {
-    if (analyzing) {
-      return <Loader2 className="h-5 w-5 animate-spin text-gray-400" />;
-    }
-    
-    if (apiError) {
-      return (
-        <Tooltip content="Sentiment analysis unavailable">
-          <Meh className="h-5 w-5 text-gray-400" />
-        </Tooltip>
-      );
-    }
-    
-    if (!sentiment || message.trim().length <= 10) {
-      return null;
-    }
-    
-    if (sentiment.sentiment === "positive" || sentiment.sentiment === "POSITIVE") {
-      return (
-        <Tooltip content="Positive sentiment detected">
-          <Smile className="h-5 w-5 text-green-500" />
-        </Tooltip>
-      );
-    } else if (sentiment.sentiment === "negative" || sentiment.sentiment === "NEGATIVE") {
-      return (
-        <Tooltip content="Negative sentiment detected">
-          <Frown className="h-5 w-5 text-red-500" />
-        </Tooltip>
-      );
-    } else {
-      return (
-        <Tooltip content="Neutral sentiment detected">
-          <Meh className="h-5 w-5 text-yellow-500" />
-        </Tooltip>
-      );
-    }
-  };
-
   return (
     <div className="relative">
       <Textarea
@@ -126,7 +85,8 @@ export const MessageInput = ({
         onChange={(e) => onMessageChange(e.target.value)}
       />
       <div className="absolute bottom-4 right-4 flex items-center space-x-2">
-        {renderSentimentIcon()}
+        {/* Sentiment indicators removed - analysis happens silently in the background */}
+        {analyzing && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
         <ImageUploader 
           previewUrls={previewUrls} 
           onImageUpload={onImageUpload}
