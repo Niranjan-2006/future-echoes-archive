@@ -4,7 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import { supabase, analyzeSentiment, SentimentAnalysis, storeSentimentWithCapsule } from "@/integrations/supabase/client";
+import { supabase, analyzeSentiment, SentimentAnalysis } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { MessageInput } from "./capsule/MessageInput";
@@ -71,7 +71,7 @@ export const CapsuleCreator = () => {
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0] || null,
-        sentiment_data: sentimentData ? JSON.stringify(sentimentData) : null
+        sentiment_data: sentimentData
       }).select('id').single();
 
       if (error) throw error;

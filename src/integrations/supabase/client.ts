@@ -64,12 +64,12 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
   }
 };
 
-// Store sentiment results with the capsule
+// Function is no longer needed as we're saving sentiment directly with the capsule
 export const storeSentimentWithCapsule = async (capsuleId: string, sentiment: SentimentAnalysis): Promise<void> => {
   try {
     const { error } = await supabase
       .from('time_capsules')
-      .update({ sentiment_data: JSON.stringify(sentiment) })
+      .update({ sentiment_data: sentiment })
       .eq('id', capsuleId);
       
     if (error) {
