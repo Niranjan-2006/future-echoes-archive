@@ -79,13 +79,12 @@ export const MessageInput = ({
   return (
     <div className="relative">
       <Textarea
-        placeholder="What do you want to capture in your time capsule?"
+        placeholder="What do you want to capture in your virtual capsule?"
         className="min-h-[200px] resize-none p-4"
         value={message}
         onChange={(e) => onMessageChange(e.target.value)}
       />
       <div className="absolute bottom-4 right-4 flex items-center space-x-2">
-        {/* Sentiment indicators removed - analysis happens silently in the background */}
         {analyzing && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
         <ImageUploader 
           previewUrls={previewUrls} 

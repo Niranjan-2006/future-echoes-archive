@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
@@ -74,9 +73,12 @@ const Capsules = () => {
         prevCapsules.filter(capsule => capsule.id !== selectedCapsule.id)
       );
       
-      // Also fetch fresh data from the server
-      await fetchCapsules();
       setShowDeleteConfirm(false);
+      
+      // Fetch fresh data from the server after a short delay
+      setTimeout(() => {
+        fetchCapsules();
+      }, 500);
     } catch (error: any) {
       toast.error(`Error deleting capsule: ${error.message}`);
     } finally {
