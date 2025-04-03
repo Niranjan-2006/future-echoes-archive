@@ -4,13 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import { supabase, analyzeSentiment, SentimentAnalysis } from "@/integrations/supabase/client";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { MessageInput } from "./capsule/MessageInput";
 import { DateTimeSelector } from "./capsule/DateTimeSelector";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { validateDateAndTime, validateSentiment } from "@/utils/validation";
+import { validateDateAndTime } from "@/utils/validation";
 
 export const CapsuleCreator = () => {
   const navigate = useNavigate();
@@ -19,7 +19,6 @@ export const CapsuleCreator = () => {
   const [time, setTime] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
-  const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
   
   const { files, previewUrls, handleFileUpload, removeImage } = useFileUpload();
 
@@ -31,27 +30,6 @@ export const CapsuleCreator = () => {
     if (!message && previewUrls.length === 0) {
       toast.error("Please add a message or image to your virtual capsule");
       return;
-    }
-    
-    // Only perform sentiment analysis if it hasn't been done yet and message is not empty
-    let sentimentData = sentiment;
-    if (message && !sentimentData && message.trim().length > 10) {
-      try {
-        setLoading(true);
-        sentimentData = await analyzeSentiment(message);
-        // It's fine if sentiment analysis fails, we just won't have sentiment data
-      } catch (error) {
-        console.error("Error with sentiment analysis:", error);
-        // Continue even if sentiment analysis fails
-      }
-    }
-    
-    // If sentiment analysis was performed, validate it
-    if (sentimentData && message) {
-      if (!validateSentiment(message, sentimentData)) {
-        setLoading(false);
-        return;
-      }
     }
 
     setLoading(true);
@@ -71,7 +49,7 @@ export const CapsuleCreator = () => {
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0] || null,
-        sentiment_data: sentimentData
+        sentiment_data: null // We'll analyze sentiment after creation
       }).select('id').single();
 
       if (error) throw error;
@@ -81,7 +59,6 @@ export const CapsuleCreator = () => {
       setDate(undefined);
       setTime("");
       setMessage("");
-      setSentiment(null);
       
       await fetchCapsules();
       navigate("/");

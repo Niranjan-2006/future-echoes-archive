@@ -14,9 +14,6 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
   }
 });
 
-// Cache for sentiment analysis results to reduce API calls
-const sentimentCache = new Map<string, SentimentAnalysis>();
-
 // Type for sentiment analysis response
 export interface SentimentAnalysis {
   sentiment: string;
@@ -25,16 +22,12 @@ export interface SentimentAnalysis {
   error?: string;
 }
 
-// Function to analyze sentiment using the edge function with caching
+// Function to analyze sentiment using the edge function (now with improved error handling)
 export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis | null> => {
   try {
-    // Generate a cache key from the text (trim to reduce minor variations)
-    const cacheKey = text.trim();
-    
-    // Check if we have a cached result
-    if (sentimentCache.has(cacheKey)) {
-      console.log("Using cached sentiment analysis result");
-      return sentimentCache.get(cacheKey) || null;
+    if (!text || text.trim().length < 10) {
+      console.log("Text too short for sentiment analysis");
+      return null;
     }
     
     console.log("Calling sentiment analysis function for text:", text.substring(0, 30) + "...");
@@ -45,7 +38,6 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
 
     if (error) {
       console.error("Supabase function error:", error);
-      // Return a mock sentiment analysis result
       return {
         sentiment: "neutral",
         score: 0.5,
@@ -66,13 +58,9 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
     
     console.log("Sentiment analysis results:", data);
     
-    // Cache the result
-    sentimentCache.set(cacheKey, data as SentimentAnalysis);
-    
     return data as SentimentAnalysis;
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
-    // Return a mock sentiment analysis result
     return {
       sentiment: "neutral",
       score: 0.5,
@@ -84,21 +72,5 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
       ],
       error: error instanceof Error ? error.message : "Unknown error"
     };
-  }
-};
-
-// Function is no longer needed as we're saving sentiment directly with the capsule
-export const storeSentimentWithCapsule = async (capsuleId: string, sentiment: SentimentAnalysis): Promise<void> => {
-  try {
-    const { error } = await supabase
-      .from('time_capsules')
-      .update({ sentiment_data: sentiment })
-      .eq('id', capsuleId);
-      
-    if (error) {
-      console.error("Error storing sentiment data:", error);
-    }
-  } catch (error) {
-    console.error("Error updating capsule with sentiment:", error);
   }
 };

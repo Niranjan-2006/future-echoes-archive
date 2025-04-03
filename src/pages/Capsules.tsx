@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+
+import { useEffect, useState } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -73,13 +74,19 @@ const Capsules = () => {
       
       toast.success("Virtual capsule deleted successfully");
       
+      // Remove deleted capsule from local state to avoid UI flicker
       setRevealedCapsules(prevCapsules => 
         prevCapsules.filter(capsule => capsule.id !== selectedCapsule.id)
       );
       
+      // Close dialog and reset selection
       setShowDeleteConfirm(false);
+      setSelectedCapsule(null);
       
-      fetchCapsules();
+      // Fetch updated capsules list after a short delay to allow the database to update
+      setTimeout(() => {
+        fetchCapsules();
+      }, 500);
     } catch (error: any) {
       console.error("Error in delete handler:", error);
       toast.error(`Error deleting capsule: ${error.message}`);
