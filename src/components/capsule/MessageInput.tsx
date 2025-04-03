@@ -3,7 +3,8 @@ import { useState, useEffect, useRef } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageUploader } from "./ImageUploader";
 import { SentimentAnalysis, analyzeSentiment } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface MessageInputProps {
   message: string;
@@ -22,7 +23,7 @@ export const MessageInput = ({
 }: MessageInputProps) => {
   const [sentiment, setSentiment] = useState<SentimentAnalysis | null>(null);
   const [analyzing, setAnalyzing] = useState(false);
-  const [apiError, setApiError] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
   const debounceTimeout = useRef<NodeJS.Timeout | null>(null);
   const lastAnalyzedText = useRef<string>("");
 
@@ -48,18 +49,21 @@ export const MessageInput = ({
         }
         
         setAnalyzing(true);
-        setApiError(false);
+        setApiError(null);
         try {
           const result = await analyzeSentiment(trimmedMessage);
           if (result) {
             setSentiment(result);
             lastAnalyzedText.current = trimmedMessage;
+            if (result.error) {
+              setApiError(result.error);
+            }
           } else {
-            setApiError(true);
+            setApiError("Failed to analyze sentiment");
           }
         } catch (error) {
           console.error("Error analyzing sentiment:", error);
-          setApiError(true);
+          setApiError(error instanceof Error ? error.message : "Unknown error");
         } finally {
           setAnalyzing(false);
         }
@@ -86,6 +90,33 @@ export const MessageInput = ({
       />
       <div className="absolute bottom-4 right-4 flex items-center space-x-2">
         {analyzing && <Loader2 className="h-5 w-5 animate-spin text-gray-400" />}
+        
+        {!analyzing && sentiment && !apiError && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <CheckCircle2 className="h-5 w-5 text-green-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sentiment analysis completed</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        
+        {!analyzing && apiError && (
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger>
+                <AlertCircle className="h-5 w-5 text-amber-500" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Sentiment analysis using fallback data</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
+        
         <ImageUploader 
           previewUrls={previewUrls} 
           onImageUpload={onImageUpload}

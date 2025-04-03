@@ -22,6 +22,7 @@ export interface SentimentAnalysis {
   sentiment: string;
   score: number;
   analysis: any;
+  error?: string;
 }
 
 // Function to analyze sentiment using the edge function with caching
@@ -44,7 +45,18 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
 
     if (error) {
       console.error("Supabase function error:", error);
-      return null;
+      // Return a mock sentiment analysis result
+      return {
+        sentiment: "neutral",
+        score: 0.5,
+        analysis: [
+          [
+            { label: "POSITIVE", score: 0.5 },
+            { label: "NEGATIVE", score: 0.5 }
+          ]
+        ],
+        error: error.message
+      };
     }
     
     if (!data) {
@@ -60,7 +72,18 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
     return data as SentimentAnalysis;
   } catch (error) {
     console.error("Error analyzing sentiment:", error);
-    return null;
+    // Return a mock sentiment analysis result
+    return {
+      sentiment: "neutral",
+      score: 0.5,
+      analysis: [
+        [
+          { label: "POSITIVE", score: 0.5 },
+          { label: "NEGATIVE", score: 0.5 }
+        ]
+      ],
+      error: error instanceof Error ? error.message : "Unknown error"
+    };
   }
 };
 
