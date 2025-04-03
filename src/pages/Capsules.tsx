@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
@@ -59,12 +60,19 @@ const Capsules = () => {
     
     setIsDeleting(true);
     try {
+      console.log("Deleting capsule with ID:", selectedCapsule.id);
+      
       const { error } = await supabase
         .from("time_capsules")
         .delete()
         .eq("id", selectedCapsule.id);
       
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase delete error:", error);
+        throw error;
+      }
+      
+      console.log("Delete operation successful");
       
       toast.success("Virtual capsule deleted successfully");
       
@@ -75,11 +83,10 @@ const Capsules = () => {
       
       setShowDeleteConfirm(false);
       
-      // Fetch fresh data from the server after a short delay
-      setTimeout(() => {
-        fetchCapsules();
-      }, 500);
+      // Fetch fresh data from the server immediately to ensure sync
+      fetchCapsules();
     } catch (error: any) {
+      console.error("Error in delete handler:", error);
       toast.error(`Error deleting capsule: ${error.message}`);
     } finally {
       setIsDeleting(false);
