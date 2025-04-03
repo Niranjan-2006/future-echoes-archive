@@ -1,7 +1,11 @@
 
 // Import from npm registry using Deno's npm: specifier
 import { createClient } from 'npm:@supabase/supabase-js@2.39.8';
-import { format } from 'https://deno.land/x/date_fns@v2.22.1/index.js';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 // Define the interface for request payload
 interface NotificationRequest {
@@ -11,10 +15,26 @@ interface NotificationRequest {
   revealDate: string;
 }
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+// Simple date formatting function
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June', 
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  
+  const day = date.getDate();
+  const month = months[date.getMonth()];
+  const year = date.getFullYear();
+  
+  // Add suffix to day
+  let suffix = 'th';
+  if (day === 1 || day === 21 || day === 31) suffix = 'st';
+  if (day === 2 || day === 22) suffix = 'nd';
+  if (day === 3 || day === 23) suffix = 'rd';
+  
+  return `${month} ${day}${suffix}, ${year}`;
+}
 
 Deno.serve(async (req) => {
   // Handle OPTIONS request for CORS
@@ -89,7 +109,7 @@ Deno.serve(async (req) => {
 
     // Extract username from email
     const userName = userData.user.email?.split('@')[0] || 'there';
-    const formattedRevealDate = format(new Date(requestData.revealDate), 'MMMM d, yyyy');
+    const formattedRevealDate = formatDate(requestData.revealDate);
     
     // The URL for the capsules page
     const appUrl = Deno.env.get('APP_URL') || 'https://your-app-url.com';
