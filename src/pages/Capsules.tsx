@@ -71,22 +71,14 @@ const Capsules = () => {
       }
       
       console.log("Delete operation successful");
-      
       toast.success("Virtual capsule deleted successfully");
       
-      // Remove deleted capsule from local state to avoid UI flicker
-      setRevealedCapsules(prevCapsules => 
-        prevCapsules.filter(capsule => capsule.id !== selectedCapsule.id)
-      );
+      // Remove deleted capsule from local context
+      await fetchCapsules();
       
       // Close dialog and reset selection
       setShowDeleteConfirm(false);
       setSelectedCapsule(null);
-      
-      // Fetch updated capsules list after a short delay to allow the database to update
-      setTimeout(() => {
-        fetchCapsules();
-      }, 500);
     } catch (error: any) {
       console.error("Error in delete handler:", error);
       toast.error(`Error deleting capsule: ${error.message}`);
