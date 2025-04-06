@@ -22,7 +22,7 @@ export interface SentimentAnalysis {
   error?: string;
 }
 
-// Function to analyze sentiment using the edge function (now with improved error handling)
+// Function to analyze sentiment using the Perplexity API instead of HuggingFace
 export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis | null> => {
   try {
     if (!text || text.trim().length < 10) {
@@ -32,7 +32,7 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
     
     console.log("Calling sentiment analysis function for text:", text.substring(0, 30) + "...");
     
-    const { data, error } = await supabase.functions.invoke("analyze-sentiment", {
+    const { data, error } = await supabase.functions.invoke("analyze-sentiment-perplexity", {
       body: { text },
     });
 
