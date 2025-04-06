@@ -19,15 +19,19 @@ const Capsules = () => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   
+  // Update revealed capsules when capsules change
   useEffect(() => {
     const now = new Date();
     const revealed = capsules.filter(capsule => 
       new Date(capsule.reveal_date) <= now || capsule.is_revealed
     );
     setRevealedCapsules(revealed);
+    console.log("Capsules updated, revealed count:", revealed.length);
   }, [capsules]);
   
+  // Initial fetch
   useEffect(() => {
+    console.log("Initial capsule fetch");
     fetchCapsules();
   }, []);
 
@@ -41,36 +45,45 @@ const Capsules = () => {
   };
 
   const handleDeleteClick = (capsule: any) => {
+    console.log("Delete clicked for capsule ID:", capsule.id);
     setSelectedCapsule(capsule);
     setShowDeleteConfirm(true);
   };
 
   const handleDeleteCapsule = async () => {
-    if (!selectedCapsule) return;
+    if (!selectedCapsule) {
+      console.error("No capsule selected for deletion");
+      return;
+    }
     
     setIsDeleting(true);
     try {
       console.log("Deleting capsule with ID:", selectedCapsule.id);
       
-      const { error } = await supabase
+      // Perform the delete operation
+      const { error: deleteError } = await supabase
         .from("time_capsules")
         .delete()
         .eq("id", selectedCapsule.id);
       
-      if (error) {
-        console.error("Supabase delete error:", error);
-        throw error;
+      if (deleteError) {
+        console.error("Supabase delete error:", deleteError);
+        throw deleteError;
       }
       
       console.log("Delete operation successful");
       toast.success("Virtual capsule deleted successfully");
       
-      // Remove deleted capsule from local context
-      await fetchCapsules();
-      
-      // Close dialog and reset selection
+      // Close the dialog first
       setShowDeleteConfirm(false);
       setSelectedCapsule(null);
+      
+      // Then refresh the capsules list with force=true to bypass throttling
+      await fetchCapsules();
+      
+      // Update local state to remove the deleted capsule immediately
+      setRevealedCapsules(prev => prev.filter(c => c.id !== selectedCapsule.id));
+      
     } catch (error: any) {
       console.error("Error in delete handler:", error);
       toast.error(`Error deleting capsule: ${error.message}`);
@@ -108,6 +121,7 @@ const Capsules = () => {
         onClose={() => setShowDeleteConfirm(false)}
         onConfirm={handleDeleteCapsule}
         isDeleting={isDeleting}
+        capsuleId={selectedCapsule?.id}
       />
     </main>
   );

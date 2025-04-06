@@ -13,23 +13,37 @@ import { Button } from "@/components/ui/button";
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => void;
+  onConfirm: () => Promise<void>; // Changed to Promise<void> for async handling
   isDeleting: boolean;
+  capsuleId?: string; // Added capsuleId for debugging
 }
 
 export const DeleteConfirmDialog = ({ 
   isOpen, 
   onClose, 
   onConfirm, 
-  isDeleting 
+  isDeleting,
+  capsuleId
 }: DeleteConfirmDialogProps) => {
+  // Force close the dialog when delete operation completes
+  const handleConfirm = async () => {
+    try {
+      await onConfirm();
+    } catch (error) {
+      console.error("Error in delete confirmation:", error);
+    }
+  };
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) onClose();
+    }}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Delete Virtual Capsule</DialogTitle>
           <DialogDescription>
-            Are you sure you want to delete this virtual capsule? This action cannot be undone.
+            Are you sure you want to delete this virtual capsule (ID: {capsuleId})? 
+            This action cannot be undone.
           </DialogDescription>
         </DialogHeader>
         
@@ -43,7 +57,7 @@ export const DeleteConfirmDialog = ({
           </Button>
           <Button 
             variant="destructive" 
-            onClick={onConfirm}
+            onClick={handleConfirm}
             disabled={isDeleting}
           >
             {isDeleting ? (

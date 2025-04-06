@@ -6,7 +6,7 @@ interface CapsuleContextType {
   capsules: any[];
   loading: boolean;
   error: string | null;
-  fetchCapsules: () => Promise<void>;
+  fetchCapsules: (force?: boolean) => Promise<void>;
 }
 
 const CapsuleContext = createContext<CapsuleContextType | undefined>(undefined);
@@ -21,9 +21,10 @@ export function CapsuleProvider({ children }: { children: ReactNode }) {
   const initialFetchDone = useRef<boolean>(false);
 
   const fetchCapsules = useCallback(async (force: boolean = false) => {
-    // Skip fetching if it was done recently (within last 5 seconds) unless forced
+    // Skip fetching if it was done recently (within last 2 seconds) unless forced
+    // Reduced from 5 seconds to 2 seconds for more responsive updates
     const now = Date.now();
-    if (!force && now - lastFetchTime.current < 5000 && initialFetchDone.current) {
+    if (!force && now - lastFetchTime.current < 2000 && initialFetchDone.current) {
       console.log("Skipping capsules fetch - data is recent");
       return;
     }
@@ -41,6 +42,7 @@ export function CapsuleProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      console.log("Fetching capsules from database...");
       const { data, error: fetchError } = await supabase
         .from("time_capsules")
         .select("*")
@@ -49,6 +51,7 @@ export function CapsuleProvider({ children }: { children: ReactNode }) {
 
       if (fetchError) throw fetchError;
       
+      console.log(`Fetched ${data?.length || 0} capsules`);
       setCapsules(data || []);
       lastFetchTime.current = now;
       initialFetchDone.current = true;
@@ -71,7 +74,7 @@ export function CapsuleProvider({ children }: { children: ReactNode }) {
         capsules,
         loading,
         error,
-        fetchCapsules: () => fetchCapsules(true),
+        fetchCapsules,
       }}
     >
       {children}
