@@ -6,7 +6,6 @@ import { CapsuleCard } from "./CapsuleCard";
 interface CapsuleListProps {
   capsules: any[];
   onViewReport: (capsule: any) => void;
-  onDeleteClick: (capsule: any) => void;
   error: string | null;
   onRetry: () => void;
 }
@@ -14,7 +13,6 @@ interface CapsuleListProps {
 export const CapsuleList = ({ 
   capsules, 
   onViewReport, 
-  onDeleteClick, 
   error, 
   onRetry 
 }: CapsuleListProps) => {
@@ -50,7 +48,6 @@ export const CapsuleList = ({
           key={capsule.id}
           capsule={capsule} 
           onViewReport={onViewReport} 
-          onDeleteClick={onDeleteClick} 
         />
       ))}
     </div>

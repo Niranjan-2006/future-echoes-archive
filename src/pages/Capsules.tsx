@@ -4,11 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { Navigation } from "@/components/Navigation";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 import { CapsuleList } from "@/components/capsule/CapsuleList";
 import { SentimentReportDialog } from "@/components/capsule/SentimentReportDialog";
-import { DeleteConfirmDialog } from "@/components/capsule/DeleteConfirmDialog";
 
 const Capsules = () => {
   const { capsules, loading, error, fetchCapsules } = useCapsules();
@@ -16,8 +13,6 @@ const Capsules = () => {
   const [revealedCapsules, setRevealedCapsules] = useState<any[]>([]);
   const [selectedCapsule, setSelectedCapsule] = useState<any>(null);
   const [showReportDialog, setShowReportDialog] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   
   // Update revealed capsules when capsules change
   useEffect(() => {
@@ -44,58 +39,6 @@ const Capsules = () => {
     setShowReportDialog(true);
   };
 
-  const handleDeleteClick = (capsule: any) => {
-    console.log("Delete clicked for capsule ID:", capsule.id);
-    setSelectedCapsule(capsule);
-    setShowDeleteConfirm(true);
-  };
-
-  const handleDeleteCapsule = async () => {
-    if (!selectedCapsule) {
-      console.error("No capsule selected for deletion");
-      return;
-    }
-    
-    setIsDeleting(true);
-    try {
-      console.log("Deleting capsule with ID:", selectedCapsule.id);
-      
-      // Perform the delete operation with explicit error handling
-      const { error: deleteError } = await supabase
-        .from("time_capsules")
-        .delete()
-        .eq("id", selectedCapsule.id);
-      
-      if (deleteError) {
-        console.error("Supabase delete error:", deleteError);
-        throw deleteError;
-      }
-      
-      console.log("Delete operation successful");
-      
-      // Update local state immediately to remove the deleted capsule
-      setRevealedCapsules(prev => prev.filter(c => c.id !== selectedCapsule.id));
-      
-      // Close the dialog
-      setShowDeleteConfirm(false);
-      
-      // Notify the user
-      toast.success("Virtual capsule deleted successfully");
-      
-      // Force refresh the capsules list
-      await fetchCapsules(true);
-      
-      // Reset selected capsule
-      setSelectedCapsule(null);
-      
-    } catch (error: any) {
-      console.error("Error in delete handler:", error);
-      toast.error(`Error deleting capsule: ${error.message}`);
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
   return (
     <main className="min-h-screen bg-background pt-16">
       <Navigation />
@@ -108,7 +51,6 @@ const Capsules = () => {
         <CapsuleList
           capsules={revealedCapsules}
           onViewReport={handleViewReport}
-          onDeleteClick={handleDeleteClick}
           error={error}
           onRetry={() => fetchCapsules(true)}
         />
@@ -118,14 +60,6 @@ const Capsules = () => {
         isOpen={showReportDialog}
         onClose={() => setShowReportDialog(false)}
         capsule={selectedCapsule}
-      />
-
-      <DeleteConfirmDialog
-        isOpen={showDeleteConfirm}
-        onClose={() => setShowDeleteConfirm(false)}
-        onConfirm={handleDeleteCapsule}
-        isDeleting={isDeleting}
-        capsuleId={selectedCapsule?.id}
       />
     </main>
   );
