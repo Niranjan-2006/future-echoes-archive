@@ -1,4 +1,3 @@
-
 import { Loader2 } from "lucide-react";
 import { 
   Dialog,
@@ -13,9 +12,9 @@ import { Button } from "@/components/ui/button";
 interface DeleteConfirmDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: () => Promise<void>; // Changed to Promise<void> for async handling
+  onConfirm: () => Promise<void>;
   isDeleting: boolean;
-  capsuleId?: string; // Added capsuleId for debugging
+  capsuleId?: string;
 }
 
 export const DeleteConfirmDialog = ({ 
@@ -25,18 +24,21 @@ export const DeleteConfirmDialog = ({
   isDeleting,
   capsuleId
 }: DeleteConfirmDialogProps) => {
-  // Force close the dialog when delete operation completes
+  // Handle confirmation with proper async/await
   const handleConfirm = async () => {
     try {
+      console.log("Starting delete operation for capsule ID:", capsuleId);
       await onConfirm();
+      // The dialog will be closed by the parent after delete completes
     } catch (error) {
       console.error("Error in delete confirmation:", error);
+      // Keep dialog open on error
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => {
-      if (!open) onClose();
+      if (!open && !isDeleting) onClose();
     }}>
       <DialogContent>
         <DialogHeader>

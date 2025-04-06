@@ -21,10 +21,10 @@ export function CapsuleProvider({ children }: { children: ReactNode }) {
   const initialFetchDone = useRef<boolean>(false);
 
   const fetchCapsules = useCallback(async (force: boolean = false) => {
-    // Skip fetching if it was done recently (within last 2 seconds) unless forced
-    // Reduced from 5 seconds to 2 seconds for more responsive updates
+    // Skip fetching if it was done recently (within last 500ms) unless forced
+    // Reduced from 2 seconds to 500ms for more responsive updates after deletion
     const now = Date.now();
-    if (!force && now - lastFetchTime.current < 2000 && initialFetchDone.current) {
+    if (!force && now - lastFetchTime.current < 500 && initialFetchDone.current) {
       console.log("Skipping capsules fetch - data is recent");
       return;
     }

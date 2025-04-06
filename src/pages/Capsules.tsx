@@ -32,7 +32,7 @@ const Capsules = () => {
   // Initial fetch
   useEffect(() => {
     console.log("Initial capsule fetch");
-    fetchCapsules();
+    fetchCapsules(true); // Force initial fetch
   }, []);
 
   const handleCreateNew = () => {
@@ -60,7 +60,7 @@ const Capsules = () => {
     try {
       console.log("Deleting capsule with ID:", selectedCapsule.id);
       
-      // Perform the delete operation
+      // Perform the delete operation with explicit error handling
       const { error: deleteError } = await supabase
         .from("time_capsules")
         .delete()
@@ -72,17 +72,21 @@ const Capsules = () => {
       }
       
       console.log("Delete operation successful");
+      
+      // Update local state immediately to remove the deleted capsule
+      setRevealedCapsules(prev => prev.filter(c => c.id !== selectedCapsule.id));
+      
+      // Close the dialog
+      setShowDeleteConfirm(false);
+      
+      // Notify the user
       toast.success("Virtual capsule deleted successfully");
       
-      // Close the dialog first
-      setShowDeleteConfirm(false);
+      // Force refresh the capsules list
+      await fetchCapsules(true);
+      
+      // Reset selected capsule
       setSelectedCapsule(null);
-      
-      // Then refresh the capsules list with force=true to bypass throttling
-      await fetchCapsules();
-      
-      // Update local state to remove the deleted capsule immediately
-      setRevealedCapsules(prev => prev.filter(c => c.id !== selectedCapsule.id));
       
     } catch (error: any) {
       console.error("Error in delete handler:", error);
@@ -106,7 +110,7 @@ const Capsules = () => {
           onViewReport={handleViewReport}
           onDeleteClick={handleDeleteClick}
           error={error}
-          onRetry={() => fetchCapsules()}
+          onRetry={() => fetchCapsules(true)}
         />
       </div>
 
