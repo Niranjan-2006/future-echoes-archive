@@ -1,16 +1,16 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { Loader2 } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { supabase, analyzeSentiment, SentimentAnalysis } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useCapsules } from "@/contexts/CapsuleContext";
 import { MessageInput } from "./capsule/MessageInput";
 import { DateTimeSelector } from "./capsule/DateTimeSelector";
 import { useFileUpload } from "@/hooks/useFileUpload";
-import { validateDateAndTime } from "@/utils/validation";
+import { validateDateAndTime, validateSentiment } from "@/utils/validation";
 
 export const CapsuleCreator = () => {
   const navigate = useNavigate();
@@ -19,8 +19,27 @@ export const CapsuleCreator = () => {
   const [time, setTime] = useState<string>("");
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
+  const [sentimentData, setSentimentData] = useState<SentimentAnalysis | null>(null);
   
   const { files, previewUrls, handleFileUpload, removeImage } = useFileUpload();
+
+  // Run sentiment analysis when message changes
+  useEffect(() => {
+    const analyzeSentimentWithDelay = setTimeout(async () => {
+      if (message && message.trim().length > 10) {
+        console.log("Running sentiment analysis...");
+        try {
+          const sentiment = await analyzeSentiment(message);
+          console.log("Sentiment analysis result:", sentiment);
+          setSentimentData(sentiment);
+        } catch (error) {
+          console.error("Error analyzing sentiment:", error);
+        }
+      }
+    }, 1000);
+
+    return () => clearTimeout(analyzeSentimentWithDelay);
+  }, [message]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +48,11 @@ export const CapsuleCreator = () => {
     
     if (!message && previewUrls.length === 0) {
       toast.error("Please add a message or image to your virtual capsule");
+      return;
+    }
+
+    // Validate sentiment if available
+    if (message && !validateSentiment(message, sentimentData)) {
       return;
     }
 
@@ -44,12 +68,19 @@ export const CapsuleCreator = () => {
         revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
       }
 
+      // Ensure we have the latest sentiment data
+      let finalSentimentData = sentimentData;
+      if (message && message.trim().length > 10 && !sentimentData) {
+        console.log("Getting final sentiment analysis before saving...");
+        finalSentimentData = await analyzeSentiment(message);
+      }
+
       const { data, error } = await supabase.from("time_capsules").insert({
         message: message || "",
         reveal_date: revealDate.toISOString(),
         user_id: user.id,
         image_url: previewUrls[0] || null,
-        sentiment_data: null // We'll analyze sentiment after creation
+        sentiment_data: finalSentimentData
       }).select('id').single();
 
       if (error) throw error;

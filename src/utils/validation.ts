@@ -38,8 +38,11 @@ export const validateSentiment = (
   
   // If sentiment analysis failed, don't block submission
   if (!sentiment) {
+    console.log("No sentiment data available for validation");
     return true;
   }
+  
+  console.log("Validating sentiment:", sentiment);
   
   // If sentiment is negative and warnings are enabled, show a confirmation
   if (warnOnNegative && 
