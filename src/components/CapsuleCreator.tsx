@@ -20,6 +20,7 @@ export const CapsuleCreator = () => {
   const [message, setMessage] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis | null>(null);
+  const [analyzingSentiment, setAnalyzingSentiment] = useState(false);
   
   const { files, previewUrls, handleFileUpload, removeImage } = useFileUpload();
 
@@ -27,14 +28,19 @@ export const CapsuleCreator = () => {
   useEffect(() => {
     const analyzeSentimentWithDelay = setTimeout(async () => {
       if (message && message.trim().length > 10) {
-        console.log("Running sentiment analysis...");
+        console.log("Running sentiment analysis on message of length:", message.length);
+        setAnalyzingSentiment(true);
         try {
           const sentiment = await analyzeSentiment(message);
-          console.log("Sentiment analysis result:", sentiment);
+          console.log("Sentiment analysis complete:", sentiment);
           setSentimentData(sentiment);
         } catch (error) {
           console.error("Error analyzing sentiment:", error);
+        } finally {
+          setAnalyzingSentiment(false);
         }
+      } else {
+        setSentimentData(null);
       }
     }, 1000);
 
@@ -72,7 +78,9 @@ export const CapsuleCreator = () => {
       let finalSentimentData = sentimentData;
       if (message && message.trim().length > 10 && !sentimentData) {
         console.log("Getting final sentiment analysis before saving...");
+        setAnalyzingSentiment(true);
         finalSentimentData = await analyzeSentiment(message);
+        setAnalyzingSentiment(false);
       }
 
       const { data, error } = await supabase.from("time_capsules").insert({
@@ -103,13 +111,35 @@ export const CapsuleCreator = () => {
   return (
     <Card className="p-6">
       <form onSubmit={handleSubmit} className="space-y-6">
-        <MessageInput 
-          message={message}
-          onMessageChange={setMessage}
-          previewUrls={previewUrls}
-          onImageUpload={handleFileUpload}
-          onImageRemove={removeImage}
-        />
+        <div className="relative">
+          <MessageInput 
+            message={message}
+            onMessageChange={setMessage}
+            previewUrls={previewUrls}
+            onImageUpload={handleFileUpload}
+            onImageRemove={removeImage}
+          />
+          {analyzingSentiment && (
+            <div className="absolute right-4 top-4 text-sm text-muted-foreground flex items-center">
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Analyzing sentiment...
+            </div>
+          )}
+          {sentimentData && !analyzingSentiment && (
+            <div className="absolute right-4 top-4 text-sm">
+              Sentiment: 
+              <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
+                sentimentData.sentiment === "positive" ? "bg-green-100 text-green-800" : 
+                sentimentData.sentiment === "negative" ? "bg-red-100 text-red-800" : 
+                "bg-yellow-100 text-yellow-800"
+              }`}>
+                {sentimentData.sentiment === "positive" ? "Positive" : 
+                 sentimentData.sentiment === "negative" ? "Negative" : 
+                 "Neutral"}
+              </span>
+            </div>
+          )}
+        </div>
         
         <DateTimeSelector 
           date={date}
@@ -128,7 +158,7 @@ export const CapsuleCreator = () => {
           </Button>
           <Button
             type="submit"
-            disabled={loading}
+            disabled={loading || analyzingSentiment}
           >
             {loading ? (
               <>

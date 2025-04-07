@@ -47,39 +47,9 @@ serve(async (req) => {
     }
 
     console.log("Analyzing sentiment with Perplexity for text:", text.substring(0, 50) + (text.length > 50 ? "..." : ""));
-    
-    // Determine basic sentiment using keywords as fallback
-    const positiveWords = ["happy", "good", "great", "excellent", "wonderful", "joy", "pleased", "delighted", "glad"];
-    const negativeWords = ["sad", "bad", "terrible", "awful", "unhappy", "disappointed", "upset", "angry", "depressed"];
-    
-    const lowerText = text.toLowerCase();
-    
-    let fallbackSentiment = "neutral";
-    let fallbackScore = 0.5;
-    
-    // Count positive and negative words
-    let positiveCount = 0;
-    let negativeCount = 0;
-    
-    positiveWords.forEach(word => {
-      if (lowerText.includes(word)) positiveCount++;
-    });
-    
-    negativeWords.forEach(word => {
-      if (lowerText.includes(word)) negativeCount++;
-    });
-    
-    // Calculate sentiment based on word counts
-    if (positiveCount > negativeCount) {
-      fallbackSentiment = "positive";
-      fallbackScore = 0.5 + (positiveCount / (positiveCount + negativeCount)) * 0.5;
-    } else if (negativeCount > positiveCount) {
-      fallbackSentiment = "negative";
-      fallbackScore = 0.5 + (negativeCount / (positiveCount + negativeCount)) * 0.5;
-    }
 
     try {
-      // Call Perplexity API for sentiment analysis
+      // Call Perplexity API with an improved prompt for sentiment analysis
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -91,15 +61,15 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert at analyzing sentiment. Analyze the sentiment of the text provided and output a JSON object with keys "sentiment" (which should be either "positive", "negative", or "neutral") and "score" (which should be a number between 0 and 1 representing the confidence of your assessment). Format the analysis as valid JSON with no additional text.'
+              content: 'You are an expert at analyzing sentiment in text. Your job is to determine if the text has a positive, negative, or neutral sentiment. Respond ONLY with a JSON object containing two fields: "sentiment" (which must be exactly one of these three strings: "positive", "negative", or "neutral") and "score" (a number between 0 and 1 representing how confident you are in this assessment, where 1 is completely confident). Be very precise in your analysis.'
             },
             {
               role: 'user',
               content: text
             }
           ],
-          temperature: 0.2,
-          max_tokens: 300
+          temperature: 0.1, // Lower temperature for more consistent responses
+          max_tokens: 200
         }),
       });
 
@@ -107,26 +77,11 @@ serve(async (req) => {
         const errorData = await response.text();
         console.error("Perplexity API error:", errorData);
         
-        // Return a calculated fallback result
-        return new Response(
-          JSON.stringify({ 
-            error: `Perplexity API error: ${response.status} ${response.statusText}`,
-            sentiment: fallbackSentiment,
-            score: fallbackScore,
-            analysis: [[
-              { label: "POSITIVE", score: fallbackSentiment === "positive" ? fallbackScore : 1 - fallbackScore },
-              { label: "NEGATIVE", score: fallbackSentiment === "negative" ? fallbackScore : 1 - fallbackScore }
-            ]]
-          }),
-          {
-            status: 200, // Return 200 with fallback data
-            headers: { ...corsHeaders, "Content-Type": "application/json" },
-          }
-        );
+        throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      console.log("Perplexity response:", JSON.stringify(result));
+      console.log("Perplexity raw response:", JSON.stringify(result));
       
       // Extract the content which should contain our JSON
       let sentimentData;
@@ -147,26 +102,27 @@ serve(async (req) => {
         // Parse the JSON string
         const parsedResult = JSON.parse(jsonStr);
         
-        sentimentData = {
-          sentiment: parsedResult.sentiment.toLowerCase(),
-          score: parseFloat(parsedResult.score),
-          analysis: [[
-            { label: "POSITIVE", score: parsedResult.sentiment === "positive" ? parsedResult.score : 1 - parsedResult.score },
-            { label: "NEGATIVE", score: parsedResult.sentiment === "negative" ? parsedResult.score : 1 - parsedResult.score }
-          ]]
-        };
-      } catch (jsonError) {
-        console.error("Error parsing Perplexity response as JSON:", jsonError);
+        if (!parsedResult.sentiment || !parsedResult.score) {
+          throw new Error("Invalid sentiment data format");
+        }
         
-        // Use fallback if JSON parsing fails
+        const sentimentValue = parsedResult.sentiment.toLowerCase();
+        const scoreValue = parseFloat(parsedResult.score);
+        
         sentimentData = {
-          sentiment: fallbackSentiment,
-          score: fallbackScore,
+          sentiment: sentimentValue,
+          score: scoreValue,
           analysis: [[
-            { label: "POSITIVE", score: fallbackSentiment === "positive" ? fallbackScore : 1 - fallbackScore },
-            { label: "NEGATIVE", score: fallbackSentiment === "negative" ? fallbackScore : 1 - fallbackScore }
+            { label: "POSITIVE", score: sentimentValue === "positive" ? scoreValue : (1 - scoreValue) / 2 },
+            { label: "NEGATIVE", score: sentimentValue === "negative" ? scoreValue : (1 - scoreValue) / 2 },
+            { label: "NEUTRAL", score: sentimentValue === "neutral" ? scoreValue : (1 - scoreValue) / 2 }
           ]]
         };
+        
+        console.log("Processed sentiment data:", sentimentData);
+      } catch (jsonError) {
+        console.error("Error parsing Perplexity response as JSON:", jsonError, "Content:", result.choices[0].message.content);
+        throw jsonError;
       }
       
       return new Response(
@@ -178,17 +134,46 @@ serve(async (req) => {
     } catch (apiError) {
       console.error("API call error:", apiError);
       
-      // Return the fallback result
+      // Perform a basic sentiment analysis as fallback
+      const lowerText = text.toLowerCase();
+      const positiveWords = ["happy", "good", "great", "excellent", "wonderful", "love", "joy", "pleased", "delighted", "glad"];
+      const negativeWords = ["sad", "bad", "terrible", "awful", "hate", "unhappy", "disappointed", "upset", "angry", "depressed"];
+      
+      let positiveCount = 0;
+      let negativeCount = 0;
+      
+      positiveWords.forEach(word => {
+        if (lowerText.includes(word)) positiveCount++;
+      });
+      
+      negativeWords.forEach(word => {
+        if (lowerText.includes(word)) negativeCount++;
+      });
+      
+      let fallbackSentiment = "neutral";
+      let fallbackScore = 0.5;
+      
+      if (positiveCount > negativeCount) {
+        fallbackSentiment = "positive";
+        fallbackScore = 0.5 + (positiveCount / (positiveCount + negativeCount + 1)) * 0.5;
+      } else if (negativeCount > positiveCount) {
+        fallbackSentiment = "negative";
+        fallbackScore = 0.5 + (negativeCount / (positiveCount + negativeCount + 1)) * 0.5;
+      }
+      
+      const fallbackData = { 
+        sentiment: fallbackSentiment,
+        score: fallbackScore,
+        analysis: [[
+          { label: "POSITIVE", score: fallbackSentiment === "positive" ? fallbackScore : (1 - fallbackScore) / 2 },
+          { label: "NEGATIVE", score: fallbackSentiment === "negative" ? fallbackScore : (1 - fallbackScore) / 2 },
+          { label: "NEUTRAL", score: fallbackSentiment === "neutral" ? fallbackScore : (1 - fallbackScore) / 2 }
+        ]],
+        error: "Used fallback analysis due to API error: " + apiError.message
+      };
+      
       return new Response(
-        JSON.stringify({ 
-          error: apiError.message,
-          sentiment: fallbackSentiment,
-          score: fallbackScore,
-          analysis: [[
-            { label: "POSITIVE", score: fallbackSentiment === "positive" ? fallbackScore : 1 - fallbackScore },
-            { label: "NEGATIVE", score: fallbackSentiment === "negative" ? fallbackScore : 1 - fallbackScore }
-          ]]
-        }),
+        JSON.stringify(fallbackData),
         {
           status: 200, // Return 200 with fallback data
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -196,7 +181,7 @@ serve(async (req) => {
       );
     }
   } catch (error) {
-    console.error("Error:", error);
+    console.error("General error:", error);
     
     // Return a fallback result
     return new Response(
@@ -205,8 +190,9 @@ serve(async (req) => {
         sentiment: "neutral",
         score: 0.5,
         analysis: [[
-          { label: "POSITIVE", score: 0.5 },
-          { label: "NEGATIVE", score: 0.5 }
+          { label: "POSITIVE", score: 0.25 },
+          { label: "NEGATIVE", score: 0.25 },
+          { label: "NEUTRAL", score: 0.5 }
         ]]
       }),
       {
