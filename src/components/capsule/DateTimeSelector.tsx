@@ -9,6 +9,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { addDays, isAfter } from "date-fns";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface DateTimeSelectorProps {
   date: Date | undefined;
@@ -23,6 +25,20 @@ export const DateTimeSelector = ({
   onDateChange, 
   onTimeChange 
 }: DateTimeSelectorProps) => {
+  // Calculate the max date (30 days from now)
+  const maxDate = addDays(new Date(), 30);
+  
+  // Function to validate if selected date is within 30 days
+  const validateDate = (selectedDate: Date | undefined): boolean => {
+    if (!selectedDate) return true;
+    return !isAfter(selectedDate, maxDate);
+  };
+  
+  // Handle date change with validation
+  const handleDateChange = (selectedDate: Date | undefined) => {
+    onDateChange(selectedDate);
+  };
+  
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       <div>
@@ -41,12 +57,18 @@ export const DateTimeSelector = ({
             <Calendar
               mode="single"
               selected={date}
-              onSelect={onDateChange}
+              onSelect={handleDateChange}
+              disabled={(day) => isAfter(day, maxDate)}
               initialFocus
               className="p-3 pointer-events-auto"
             />
           </PopoverContent>
         </Popover>
+        {date && !validateDate(date) && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertDescription>Set a reveal date within 30 days!</AlertDescription>
+          </Alert>
+        )}
       </div>
       
       <div>

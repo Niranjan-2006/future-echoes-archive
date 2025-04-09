@@ -1,6 +1,7 @@
 
 import { toast } from "sonner";
 import { SentimentAnalysis } from "@/integrations/supabase/client";
+import { addDays, isAfter } from "date-fns";
 
 export const validateDateAndTime = (date: Date | undefined, time: string): boolean => {
   if (!date) {
@@ -20,6 +21,13 @@ export const validateDateAndTime = (date: Date | undefined, time: string): boole
   const now = new Date();
   if (revealDate <= now) {
     toast.error("Reveal date and time must be in the future");
+    return false;
+  }
+  
+  // Check if the selected date is within 30 days
+  const maxDate = addDays(now, 30);
+  if (isAfter(revealDate, maxDate)) {
+    toast.error("Set a reveal date within 30 days!");
     return false;
   }
 

@@ -11,7 +11,7 @@ import {
 import { Button } from "./ui/button";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
-import { Clock, LogOut } from "lucide-react";
+import { Clock, LogOut, ClipboardList } from "lucide-react";
 
 export const Navigation = () => {
   const navigate = useNavigate();
@@ -35,6 +35,15 @@ export const Navigation = () => {
                     onClick={() => navigate("/")}
                   >
                     Home
+                  </NavigationMenuLink>
+                </NavigationMenuItem>
+                <NavigationMenuItem>
+                  <NavigationMenuLink 
+                    className={navigationMenuTriggerStyle()}
+                    onClick={() => navigate("/questionnaire")}
+                  >
+                    <ClipboardList className="mr-1 h-4 w-4" />
+                    Questionnaire
                   </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>

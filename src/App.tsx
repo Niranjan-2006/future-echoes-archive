@@ -12,6 +12,7 @@ import Auth from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 import CreateCapsule from "./pages/CreateCapsule";
 import Capsules from "./pages/Capsules";
+import Questionnaire from "./pages/Questionnaire";
 
 const queryClient = new QueryClient({
   // Configure React Query to reduce network requests
@@ -81,6 +82,10 @@ const App = () => {
               <Route
                 path="/capsules"
                 element={isAuthenticated ? <Capsules /> : <Navigate to="/auth" />}
+              />
+              <Route
+                path="/questionnaire"
+                element={isAuthenticated ? <Questionnaire /> : <Navigate to="/auth" />}
               />
               <Route
                 path="/auth"
