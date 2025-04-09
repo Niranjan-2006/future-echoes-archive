@@ -44,27 +44,12 @@ export const SentimentReportDialog = ({ isOpen, onClose, capsule }: SentimentRep
       return null;
     }
     
-    try {
-      const sentiment = typeof capsule.sentiment_data === 'string' 
-        ? JSON.parse(capsule.sentiment_data) 
-        : capsule.sentiment_data;
-      
-      // Add some basic validation to ensure the sentiment data is properly formatted
-      if (!sentiment || typeof sentiment !== 'object') {
-        console.error("Invalid sentiment data format:", sentiment);
-        return null;
-      }
-      
-      return sentiment;
-    } catch (error) {
-      console.error("Error parsing sentiment data:", error);
-      return null;
-    }
+    const sentiment = typeof capsule.sentiment_data === 'string' 
+      ? JSON.parse(capsule.sentiment_data) 
+      : capsule.sentiment_data;
+    
+    return sentiment;
   };
-
-  // Get the sentiment data
-  const sentimentDetails = getSentimentDetails(capsule);
-  const sentimentFormat = formatSentiment(capsule);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -87,24 +72,24 @@ export const SentimentReportDialog = ({ isOpen, onClose, capsule }: SentimentRep
             
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Overall Sentiment:</span>
-              <span className={`text-sm font-bold px-2 py-0.5 rounded ${sentimentFormat.color}`}>
-                {sentimentFormat.label}
+              <span className={`text-sm font-bold px-2 py-0.5 rounded ${formatSentiment(capsule).color}`}>
+                {formatSentiment(capsule).label}
               </span>
             </div>
             
-            {sentimentDetails && (
+            {getSentimentDetails(capsule) && (
               <div className="mt-3 space-y-2">
                 <div className="text-xs text-muted-foreground">
                   <span className="font-medium">Confidence Score:</span> 
-                  {(sentimentDetails.score * 100).toFixed(1)}%
+                  {(getSentimentDetails(capsule).score * 100).toFixed(1)}%
                 </div>
                 
-                {sentimentDetails.analysis && (
+                {getSentimentDetails(capsule).analysis && (
                   <div className="mt-2 pt-2 border-t border-border/50">
                     <div className="text-xs text-muted-foreground mb-1 font-medium">Detailed Analysis:</div>
                     <div className="space-y-1">
-                      {sentimentDetails.analysis[0] && 
-                        sentimentDetails.analysis[0].map((item: any, idx: number) => (
+                      {getSentimentDetails(capsule).analysis[0] && 
+                        getSentimentDetails(capsule).analysis[0].map((item: any, idx: number) => (
                           <div key={idx} className="flex justify-between text-xs">
                             <span>{item.label}:</span>
                             <span className="font-mono">{(item.score * 100).toFixed(1)}%</span>
@@ -117,7 +102,7 @@ export const SentimentReportDialog = ({ isOpen, onClose, capsule }: SentimentRep
               </div>
             )}
             
-            {!sentimentDetails && (
+            {!getSentimentDetails(capsule) && (
               <div className="text-xs text-muted-foreground italic mt-2">
                 No detailed sentiment analysis available for this message.
               </div>
