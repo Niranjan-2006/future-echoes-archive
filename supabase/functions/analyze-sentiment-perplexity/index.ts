@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    // Using the new API key provided by the user
+    // Using the API key provided by the user
     const PERPLEXITY_API_KEY = "J4w3z0RjMSYXxcTQ8chbHsMcJucTJ3n5";
     if (!PERPLEXITY_API_KEY) {
       console.error("PERPLEXITY_API_KEY is not set");
