@@ -18,7 +18,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
 export interface SentimentAnalysis {
   sentiment: string;
   score: number;
-  analysis: any;
+  analysis?: any;
   error?: string;
 }
 
@@ -61,6 +61,29 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
     // Convert any uppercase sentiment keys to lowercase for consistency
     if (data.sentiment) {
       data.sentiment = data.sentiment.toLowerCase();
+    }
+    
+    // Ensure a proper structure for the analysis field if missing
+    if (!data.analysis) {
+      // Create a default analysis structure based on the sentiment
+      const sentiment = data.sentiment?.toLowerCase() || "neutral";
+      let positiveScore = 0.5;
+      let negativeScore = 0.5;
+      
+      if (sentiment === "positive") {
+        positiveScore = data.score || 0.8;
+        negativeScore = 1 - positiveScore;
+      } else if (sentiment === "negative") {
+        negativeScore = data.score || 0.8;
+        positiveScore = 1 - negativeScore;
+      }
+      
+      data.analysis = [
+        [
+          { label: "POSITIVE", score: positiveScore },
+          { label: "NEGATIVE", score: negativeScore }
+        ]
+      ];
     }
     
     return data as SentimentAnalysis;

@@ -1,56 +1,68 @@
 
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+// Follow Deno's URL pattern for imports
+import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
 
+// Define CORS headers
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Using the new API key provided by the user
+    // Using the provided API key for Perplexity
     const PERPLEXITY_API_KEY = "J4w3z0RjMSYXxcTQ8chbHsMcJucTJ3n5";
     if (!PERPLEXITY_API_KEY) {
       console.error("PERPLEXITY_API_KEY is not set");
       return new Response(
         JSON.stringify({ 
-          error: "API key not configured", 
-          sentiment: "neutral", 
-          score: 0.5,
-          analysis: [[
-            { label: "POSITIVE", score: 0.5 },
-            { label: "NEGATIVE", score: 0.5 }
-          ]]
+          error: "API key is not configured",
+          sentiment: "neutral",
+          score: 0.5 
         }),
-        {
-          status: 200, // Return 200 with fallback data
+        { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 500 
         }
       );
     }
 
-    const { text } = await req.json();
-    
-    if (!text) {
+    let text: string;
+    try {
+      const body = await req.json();
+      text = body.text;
+      
+      if (!text) {
+        throw new Error("No text provided");
+      }
+    } catch (error) {
+      console.error("Error parsing request:", error);
       return new Response(
-        JSON.stringify({ error: "Text is required" }),
-        {
-          status: 400,
+        JSON.stringify({ 
+          error: "Invalid request format. Expected JSON with a 'text' field.",
+          sentiment: "neutral",
+          score: 0.5 
+        }),
+        { 
           headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 400 
         }
       );
     }
 
-    console.log("Analyzing sentiment with Perplexity for text:", text.substring(0, 50) + (text.length > 50 ? "..." : ""));
+    // Clean and truncate the text if needed
+    text = text.trim().substring(0, 2000);
+    
+    console.log(`Analyzing sentiment for text: "${text.substring(0, 50)}..."`);
 
     try {
-      // Call Perplexity API with an improved prompt for sentiment analysis
+      // Use Perplexity API for sentiment analysis
+      console.log("Calling Perplexity API...");
       const response = await fetch('https://api.perplexity.ai/chat/completions', {
         method: 'POST',
         headers: {
@@ -62,182 +74,185 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: `You are a precise sentiment analysis expert focusing ONLY on emotional tone.
+              content: `You are a highly accurate sentiment analysis expert focused ONLY on emotional tone.
 
 INSTRUCTIONS:
-1. Analyze ONLY the emotional sentiment of the given text.
+1. Analyze the emotional sentiment of the given text.
 2. Return ONLY a JSON object with this exact format:
 {
   "sentiment": "positive"|"negative"|"neutral",
   "score": (number between 0 and 1 indicating confidence)
 }
 
-STRICT GUIDELINES:
-- Words expressing happiness, joy, love, excitement = POSITIVE
-- Words expressing sadness, anger, hate, frustration = NEGATIVE
-- Neutral = no clear emotional content
-- Mentions of feeling happy/good MUST be POSITIVE with high confidence
-- "I'm happy" = POSITIVE with 0.9+ confidence score
-- "I'm sad" = NEGATIVE with 0.9+ confidence score
-- A score closer to 1.0 indicates higher confidence
-- ONLY return valid JSON, no explanations`
+CRITICAL RULES:
+- "I am happy" or "I feel good" MUST be classified as POSITIVE with score > 0.8
+- "I am sad" or "I feel bad" MUST be classified as NEGATIVE with score > 0.8
+- Words expressing happiness, excitement, joy = POSITIVE
+- Words expressing sadness, anger, frustration = NEGATIVE
+- If no clear emotional content = NEUTRAL with score ~0.5
+- Always return valid JSON with only the required fields
+- No explanations, ONLY the JSON object`
             },
             {
               role: 'user',
               content: text
             }
           ],
-          temperature: 0.05 // Very low temperature for more deterministic responses
+          temperature: 0.01, // Very low temperature for deterministic responses
+          max_tokens: 100
         }),
       });
 
       if (!response.ok) {
-        const errorData = await response.text();
-        console.error("Perplexity API error:", errorData);
-        
         throw new Error(`Perplexity API error: ${response.status} ${response.statusText}`);
       }
 
-      const result = await response.json();
-      console.log("Perplexity raw response:", JSON.stringify(result));
+      const data = await response.json();
+      console.log("Perplexity API response:", JSON.stringify(data));
+
+      if (!data.choices || data.choices.length === 0) {
+        throw new Error("No choices returned from Perplexity API");
+      }
+
+      const content = data.choices[0]?.message?.content;
       
-      // Extract the content which should contain our JSON
-      let sentimentData;
+      if (!content) {
+        throw new Error("No content in Perplexity API response");
+      }
+
       try {
-        // Look for JSON in the response content
-        const content = result.choices[0].message.content;
+        // Extract JSON from the response
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const jsonStr = jsonMatch ? jsonMatch[0] : content;
+        const sentimentData = JSON.parse(jsonStr);
         
-        // Try to parse the content as JSON or extract JSON from text
-        let jsonStr = content;
-        
-        // If content contains text and JSON, try to extract just the JSON part
-        if (content.includes('{') && content.includes('}')) {
-          const jsonStart = content.indexOf('{');
-          const jsonEnd = content.lastIndexOf('}') + 1;
-          jsonStr = content.substring(jsonStart, jsonEnd);
+        // Validate the structure
+        if (!sentimentData.sentiment || typeof sentimentData.score !== 'number') {
+          throw new Error("Invalid sentiment data structure");
+        }
+
+        // Standardize sentiment value
+        const sentiment = sentimentData.sentiment.toLowerCase();
+        if (!['positive', 'negative', 'neutral'].includes(sentiment)) {
+          throw new Error("Invalid sentiment value");
         }
         
-        // Parse the JSON string
-        const parsedResult = JSON.parse(jsonStr);
+        // Create analysis structure for compatibility
+        const analysis = createAnalysisStructure(sentiment, sentimentData.score);
         
-        if (!parsedResult.sentiment || !parsedResult.score) {
-          throw new Error("Invalid sentiment data format");
-        }
-        
-        const sentimentValue = parsedResult.sentiment.toLowerCase();
-        const scoreValue = parseFloat(parsedResult.score);
-        
-        sentimentData = {
-          sentiment: sentimentValue,
-          score: scoreValue,
-          analysis: [[
-            { label: "POSITIVE", score: sentimentValue === "positive" ? scoreValue : (1 - scoreValue) / 2 },
-            { label: "NEGATIVE", score: sentimentValue === "negative" ? scoreValue : (1 - scoreValue) / 2 },
-            { label: "NEUTRAL", score: sentimentValue === "neutral" ? scoreValue : (1 - scoreValue) / 2 }
-          ]]
+        const result = {
+          sentiment: sentiment,
+          score: sentimentData.score,
+          analysis: analysis
         };
         
-        console.log("Processed sentiment data:", sentimentData);
-      } catch (jsonError) {
-        console.error("Error parsing Perplexity response as JSON:", jsonError, "Content:", result.choices[0].message.content);
-        throw jsonError;
+        console.log("Final sentiment result:", result);
+        
+        return new Response(
+          JSON.stringify(result),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      } catch (parseError) {
+        console.error("Error parsing sentiment JSON:", parseError, "Content:", content);
+        throw new Error(`Failed to parse sentiment data: ${parseError.message}`);
       }
-      
-      return new Response(
-        JSON.stringify(sentimentData),
-        {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
-      );
     } catch (apiError) {
-      console.error("API call error:", apiError);
+      console.error("API error:", apiError);
       
-      // More sophisticated fallback sentiment analysis
-      const lowerText = text.toLowerCase();
-      
-      // Expanded word lists for better detection
-      const positiveWords = [
-        "happy", "good", "great", "excellent", "wonderful", "love", "joy", "pleased", 
-        "delighted", "glad", "excited", "amazing", "awesome", "fantastic", "content",
-        "thrilled", "satisfied", "proud", "grateful", "thankful", "appreciative",
-        "hopeful", "optimistic", "positive", "cheerful", "merry", "jolly", "elated",
-        "enjoy", "like", "adore", "cherish"
-      ];
-      
-      const negativeWords = [
-        "sad", "bad", "terrible", "awful", "hate", "unhappy", "disappointed", "upset", 
-        "angry", "depressed", "miserable", "frustrated", "annoyed", "disgusted", "hurt",
-        "devastated", "heartbroken", "gloomy", "melancholy", "regretful", "sorry",
-        "bitter", "dismal", "distressed", "troubled", "worried", "afraid", "fearful",
-        "stressed", "anxious", "dislike", "loathe", "despise"
-      ];
-      
-      // Count word occurrences with word boundary checks
-      let positiveCount = 0;
-      let negativeCount = 0;
-      
-      positiveWords.forEach(word => {
-        const regex = new RegExp(`\\b${word}\\b|\\b${word}ing\\b|\\b${word}ed\\b`, 'gi');
-        const matches = lowerText.match(regex);
-        if (matches) positiveCount += matches.length;
-      });
-      
-      negativeWords.forEach(word => {
-        const regex = new RegExp(`\\b${word}\\b|\\b${word}ing\\b|\\b${word}ed\\b`, 'gi');
-        const matches = lowerText.match(regex);
-        if (matches) negativeCount += matches.length;
-      });
-      
-      // Calculate sentiment and score
-      let fallbackSentiment = "neutral";
-      let fallbackScore = 0.5;
-      
-      if (positiveCount > 0 && positiveCount > negativeCount) {
-        fallbackSentiment = "positive";
-        fallbackScore = 0.5 + Math.min(0.5, (positiveCount / (positiveCount + negativeCount + 1)) * 0.5);
-      } else if (negativeCount > 0 && negativeCount > positiveCount) {
-        fallbackSentiment = "negative";
-        fallbackScore = 0.5 + Math.min(0.5, (negativeCount / (positiveCount + negativeCount + 1)) * 0.5);
-      }
-      
-      const fallbackData = { 
-        sentiment: fallbackSentiment,
-        score: fallbackScore,
-        analysis: [[
-          { label: "POSITIVE", score: fallbackSentiment === "positive" ? fallbackScore : (1 - fallbackScore) / 2 },
-          { label: "NEGATIVE", score: fallbackSentiment === "negative" ? fallbackScore : (1 - fallbackScore) / 2 },
-          { label: "NEUTRAL", score: fallbackSentiment === "neutral" ? fallbackScore : (1 - fallbackScore) / 2 }
-        ]],
-        error: "Used fallback analysis due to API error: " + apiError.message
-      };
+      // Fallback to basic sentiment analysis using keywords
+      const fallbackResult = performFallbackSentimentAnalysis(text);
+      console.log("Using fallback sentiment analysis:", fallbackResult);
       
       return new Response(
-        JSON.stringify(fallbackData),
-        {
-          status: 200,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        }
+        JSON.stringify(fallbackResult),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
   } catch (error) {
-    console.error("General error:", error);
-    
-    // Return a fallback result
+    console.error("Error in sentiment analysis:", error);
     return new Response(
       JSON.stringify({ 
-        error: error.message,
-        sentiment: "neutral",
+        error: error.message || "Unknown error", 
+        sentiment: "neutral", 
         score: 0.5,
-        analysis: [[
-          { label: "POSITIVE", score: 0.25 },
-          { label: "NEGATIVE", score: 0.25 },
-          { label: "NEUTRAL", score: 0.5 }
-        ]]
+        analysis: [
+          [
+            { label: "POSITIVE", score: 0.5 },
+            { label: "NEGATIVE", score: 0.5 }
+          ]
+        ]
       }),
-      {
-        status: 200,
+      { 
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 500 
       }
     );
   }
 });
+
+// Create a standardized analysis structure for the sentiment
+function createAnalysisStructure(sentiment: string, score: number) {
+  let positiveScore = 0.5;
+  let negativeScore = 0.5;
+  
+  if (sentiment === "positive") {
+    positiveScore = score;
+    negativeScore = 1 - score;
+  } else if (sentiment === "negative") {
+    negativeScore = score;
+    positiveScore = 1 - score;
+  }
+  
+  return [
+    [
+      { label: "POSITIVE", score: positiveScore },
+      { label: "NEGATIVE", score: negativeScore }
+    ]
+  ];
+}
+
+// Fallback sentiment analysis when the API fails
+function performFallbackSentimentAnalysis(text: string) {
+  const lowerText = text.toLowerCase();
+  
+  // Simple keyword-based sentiment analysis
+  const positiveWords = ["happy", "good", "love", "great", "excellent", "joy", "amazing", "wonderful", "glad", "excited", "positive"];
+  const negativeWords = ["sad", "bad", "hate", "terrible", "awful", "unhappy", "disappointed", "miserable", "angry", "upset", "negative"];
+  
+  let positiveCount = 0;
+  let negativeCount = 0;
+  
+  // Count positive and negative keywords
+  positiveWords.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'g');
+    const matches = lowerText.match(regex);
+    if (matches) positiveCount += matches.length;
+  });
+  
+  negativeWords.forEach(word => {
+    const regex = new RegExp(`\\b${word}\\b`, 'g');
+    const matches = lowerText.match(regex);
+    if (matches) negativeCount += matches.length;
+  });
+  
+  let sentiment = "neutral";
+  let score = 0.5;
+  
+  // Determine sentiment based on keyword counts
+  if (positiveCount > negativeCount) {
+    sentiment = "positive";
+    score = Math.min(0.5 + (positiveCount - negativeCount) * 0.1, 0.95);
+  } else if (negativeCount > positiveCount) {
+    sentiment = "negative";
+    score = Math.min(0.5 + (negativeCount - positiveCount) * 0.1, 0.95);
+  }
+  
+  // Create the analysis structure
+  const analysis = createAnalysisStructure(sentiment, score);
+  
+  return {
+    sentiment,
+    score,
+    analysis
+  };
+}
