@@ -14,7 +14,8 @@ serve(async (req) => {
   }
 
   try {
-    const PERPLEXITY_API_KEY = Deno.env.get("PERPLEXITY_API_KEY");
+    // Using the new API key provided by the user
+    const PERPLEXITY_API_KEY = "J4w3z0RjMSYXxcTQ8chbHsMcJucTJ3n5";
     if (!PERPLEXITY_API_KEY) {
       console.error("PERPLEXITY_API_KEY is not set");
       return new Response(
@@ -61,32 +62,32 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: `You are a sentiment analysis expert. You analyze the emotional tone of text precisely.
+              content: `You are a precise sentiment analysis expert focusing ONLY on emotional tone.
 
 INSTRUCTIONS:
-1. Analyze the emotional sentiment of the given text.
-2. Respond with ONLY JSON in this exact format:
+1. Analyze ONLY the emotional sentiment of the given text.
+2. Return ONLY a JSON object with this exact format:
 {
   "sentiment": "positive"|"negative"|"neutral",
   "score": (number between 0 and 1 indicating confidence)
 }
 
-IMPORTANT RULES:
-- Words like "happy", "good", "great", "love", "excited" strongly indicate POSITIVE sentiment
-- Words like "sad", "bad", "hate", "terrible", "angry" strongly indicate NEGATIVE sentiment
-- If there's no clear emotional content, use NEUTRAL
-- Be very sensitive to positive expressions - if someone mentions feeling happy, that should be strongly positive
-- Base your analysis primarily on emotional content, not factual statements
-- A higher score (closer to 1.0) indicates higher confidence
-- ONLY return valid JSON with no explanations`
+STRICT GUIDELINES:
+- Words expressing happiness, joy, love, excitement = POSITIVE
+- Words expressing sadness, anger, hate, frustration = NEGATIVE
+- Neutral = no clear emotional content
+- Mentions of feeling happy/good MUST be POSITIVE with high confidence
+- "I'm happy" = POSITIVE with 0.9+ confidence score
+- "I'm sad" = NEGATIVE with 0.9+ confidence score
+- A score closer to 1.0 indicates higher confidence
+- ONLY return valid JSON, no explanations`
             },
             {
               role: 'user',
               content: text
             }
           ],
-          temperature: 0.1, // Lower temperature for more consistent responses
-          max_tokens: 100
+          temperature: 0.05 // Very low temperature for more deterministic responses
         }),
       });
 

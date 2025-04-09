@@ -126,7 +126,7 @@ export const CapsuleCreator = () => {
               Processing...
             </div>
           )}
-          {/* Remove sentiment display during creation */}
+          {/* No sentiment display during creation */}
         </div>
         
         <DateTimeSelector 

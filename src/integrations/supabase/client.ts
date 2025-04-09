@@ -38,7 +38,6 @@ export const analyzeSentiment = async (text: string): Promise<SentimentAnalysis 
 
     if (error) {
       console.error("Supabase function error:", error);
-      // Return a neutral sentiment instead of using the fallback in the edge function
       return {
         sentiment: "neutral",
         score: 0.5,
