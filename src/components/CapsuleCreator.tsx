@@ -24,7 +24,7 @@ export const CapsuleCreator = () => {
   
   const { files, previewUrls, handleFileUpload, removeImage } = useFileUpload();
 
-  // Run sentiment analysis when message changes
+  // Run sentiment analysis when message changes, but don't display results
   useEffect(() => {
     const analyzeSentimentWithDelay = setTimeout(async () => {
       if (message && message.trim().length > 10) {
@@ -33,6 +33,7 @@ export const CapsuleCreator = () => {
         try {
           const sentiment = await analyzeSentiment(message);
           console.log("Sentiment analysis complete:", sentiment);
+          // Store sentiment data but don't display it
           setSentimentData(sentiment);
         } catch (error) {
           console.error("Error analyzing sentiment:", error);
@@ -57,7 +58,7 @@ export const CapsuleCreator = () => {
       return;
     }
 
-    // Validate sentiment if available
+    // Validate sentiment if available (but don't show to user)
     if (message && !validateSentiment(message, sentimentData)) {
       return;
     }
@@ -122,23 +123,10 @@ export const CapsuleCreator = () => {
           {analyzingSentiment && (
             <div className="absolute right-4 top-4 text-sm text-muted-foreground flex items-center">
               <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Analyzing sentiment...
+              Processing...
             </div>
           )}
-          {sentimentData && !analyzingSentiment && (
-            <div className="absolute right-4 top-4 text-sm">
-              Sentiment: 
-              <span className={`ml-2 px-2 py-0.5 rounded text-xs ${
-                sentimentData.sentiment === "positive" ? "bg-green-100 text-green-800" : 
-                sentimentData.sentiment === "negative" ? "bg-red-100 text-red-800" : 
-                "bg-yellow-100 text-yellow-800"
-              }`}>
-                {sentimentData.sentiment === "positive" ? "Positive" : 
-                 sentimentData.sentiment === "negative" ? "Negative" : 
-                 "Neutral"}
-              </span>
-            </div>
-          )}
+          {/* Remove sentiment display during creation */}
         </div>
         
         <DateTimeSelector 

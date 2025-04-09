@@ -28,9 +28,11 @@ export const SentimentReportDialog = ({ isOpen, onClose, capsule }: SentimentRep
       ? JSON.parse(capsule.sentiment_data) 
       : capsule.sentiment_data;
     
-    if (sentiment.sentiment === "positive" || sentiment.sentiment === "POSITIVE") {
+    const sentimentValue = (sentiment.sentiment || "").toLowerCase();
+    
+    if (sentimentValue === "positive") {
       return { label: "Positive", color: "text-green-500" };
-    } else if (sentiment.sentiment === "negative" || sentiment.sentiment === "NEGATIVE") {
+    } else if (sentimentValue === "negative") {
       return { label: "Negative", color: "text-red-500" };
     } else {
       return { label: "Neutral", color: "text-yellow-500" };

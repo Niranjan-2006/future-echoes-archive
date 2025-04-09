@@ -61,7 +61,24 @@ serve(async (req) => {
           messages: [
             {
               role: 'system',
-              content: 'You are an expert at analyzing sentiment in text. Your job is to determine if the text has a positive, negative, or neutral sentiment. Respond ONLY with a JSON object containing two fields: "sentiment" (which must be exactly one of these three strings: "positive", "negative", or "neutral") and "score" (a number between 0 and 1 representing how confident you are in this assessment, where 1 is completely confident). Be very precise in your analysis.'
+              content: `You are a sentiment analysis expert. You analyze the emotional tone of text precisely.
+
+INSTRUCTIONS:
+1. Analyze the emotional sentiment of the given text.
+2. Respond with ONLY JSON in this exact format:
+{
+  "sentiment": "positive"|"negative"|"neutral",
+  "score": (number between 0 and 1 indicating confidence)
+}
+
+IMPORTANT RULES:
+- Words like "happy", "good", "great", "love", "excited" strongly indicate POSITIVE sentiment
+- Words like "sad", "bad", "hate", "terrible", "angry" strongly indicate NEGATIVE sentiment
+- If there's no clear emotional content, use NEUTRAL
+- Be very sensitive to positive expressions - if someone mentions feeling happy, that should be strongly positive
+- Base your analysis primarily on emotional content, not factual statements
+- A higher score (closer to 1.0) indicates higher confidence
+- ONLY return valid JSON with no explanations`
             },
             {
               role: 'user',
@@ -69,7 +86,7 @@ serve(async (req) => {
             }
           ],
           temperature: 0.1, // Lower temperature for more consistent responses
-          max_tokens: 200
+          max_tokens: 100
         }),
       });
 
@@ -134,31 +151,52 @@ serve(async (req) => {
     } catch (apiError) {
       console.error("API call error:", apiError);
       
-      // Perform a basic sentiment analysis as fallback
+      // More sophisticated fallback sentiment analysis
       const lowerText = text.toLowerCase();
-      const positiveWords = ["happy", "good", "great", "excellent", "wonderful", "love", "joy", "pleased", "delighted", "glad"];
-      const negativeWords = ["sad", "bad", "terrible", "awful", "hate", "unhappy", "disappointed", "upset", "angry", "depressed"];
       
+      // Expanded word lists for better detection
+      const positiveWords = [
+        "happy", "good", "great", "excellent", "wonderful", "love", "joy", "pleased", 
+        "delighted", "glad", "excited", "amazing", "awesome", "fantastic", "content",
+        "thrilled", "satisfied", "proud", "grateful", "thankful", "appreciative",
+        "hopeful", "optimistic", "positive", "cheerful", "merry", "jolly", "elated",
+        "enjoy", "like", "adore", "cherish"
+      ];
+      
+      const negativeWords = [
+        "sad", "bad", "terrible", "awful", "hate", "unhappy", "disappointed", "upset", 
+        "angry", "depressed", "miserable", "frustrated", "annoyed", "disgusted", "hurt",
+        "devastated", "heartbroken", "gloomy", "melancholy", "regretful", "sorry",
+        "bitter", "dismal", "distressed", "troubled", "worried", "afraid", "fearful",
+        "stressed", "anxious", "dislike", "loathe", "despise"
+      ];
+      
+      // Count word occurrences with word boundary checks
       let positiveCount = 0;
       let negativeCount = 0;
       
       positiveWords.forEach(word => {
-        if (lowerText.includes(word)) positiveCount++;
+        const regex = new RegExp(`\\b${word}\\b|\\b${word}ing\\b|\\b${word}ed\\b`, 'gi');
+        const matches = lowerText.match(regex);
+        if (matches) positiveCount += matches.length;
       });
       
       negativeWords.forEach(word => {
-        if (lowerText.includes(word)) negativeCount++;
+        const regex = new RegExp(`\\b${word}\\b|\\b${word}ing\\b|\\b${word}ed\\b`, 'gi');
+        const matches = lowerText.match(regex);
+        if (matches) negativeCount += matches.length;
       });
       
+      // Calculate sentiment and score
       let fallbackSentiment = "neutral";
       let fallbackScore = 0.5;
       
-      if (positiveCount > negativeCount) {
+      if (positiveCount > 0 && positiveCount > negativeCount) {
         fallbackSentiment = "positive";
-        fallbackScore = 0.5 + (positiveCount / (positiveCount + negativeCount + 1)) * 0.5;
-      } else if (negativeCount > positiveCount) {
+        fallbackScore = 0.5 + Math.min(0.5, (positiveCount / (positiveCount + negativeCount + 1)) * 0.5);
+      } else if (negativeCount > 0 && negativeCount > positiveCount) {
         fallbackSentiment = "negative";
-        fallbackScore = 0.5 + (negativeCount / (positiveCount + negativeCount + 1)) * 0.5;
+        fallbackScore = 0.5 + Math.min(0.5, (negativeCount / (positiveCount + negativeCount + 1)) * 0.5);
       }
       
       const fallbackData = { 
@@ -175,7 +213,7 @@ serve(async (req) => {
       return new Response(
         JSON.stringify(fallbackData),
         {
-          status: 200, // Return 200 with fallback data
+          status: 200,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         }
       );
@@ -196,7 +234,7 @@ serve(async (req) => {
         ]]
       }),
       {
-        status: 200, // Return 200 with fallback data
+        status: 200,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       }
     );
