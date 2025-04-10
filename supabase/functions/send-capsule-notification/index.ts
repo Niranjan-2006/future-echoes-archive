@@ -1,4 +1,3 @@
-
 // Import from npm registry using Deno's npm: specifier
 import { createClient } from 'npm:@supabase/supabase-js@2.39.8';
 
@@ -121,7 +120,7 @@ Deno.serve(async (req) => {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
         <h2 style="color: #4F46E5;">Hi ${userName},</h2>
         
-        <p>Your Virtual Capsule is now available to view!</p>
+        <p>Your Virtual Capsule "${capsuleData.name}" is now available to view!</p>
         
         <p>You set the reveal date for ${formattedRevealDate}, and the moment has arrived! We hope you're excited to see what you wrote to your future self, and how your feelings have evolved since then. We've also analyzed the sentiment of your entries, giving you a deeper look into your emotional journey.</p>
         

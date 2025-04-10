@@ -34,9 +34,9 @@ export const CapsuleList = ({
   if (capsules.length === 0) {
     return (
       <div className="text-center py-12">
-        <h2 className="text-2xl font-medium mb-4">No revealed virtual capsules yet</h2>
-        <p className="text-muted-foreground mb-6">You don't have any revealed virtual capsules yet. They will appear here when their reveal date is reached.</p>
-        <Button onClick={handleCreateNew}>Create a Virtual Capsule</Button>
+        <h2 className="text-2xl font-medium mb-4">Reflection</h2>
+        <p className="text-muted-foreground mb-6">No active time capsules found. Create a time capsule to get reflection questions.</p>
+        <Button className="mx-auto" onClick={handleCreateNew}>Create a Time Capsule</Button>
       </div>
     );
   }
