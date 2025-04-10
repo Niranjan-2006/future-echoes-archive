@@ -5,9 +5,10 @@ import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { supabase, analyzeSentiment, SentimentAnalysis } from "@/integrations/supabase/client";
-import { Loader2 } from "lucide-react";
-import { addDays, isAfter, isSameDay, format, formatDistance } from "date-fns";
+import { supabase, analyzeSentiment } from "@/integrations/supabase/client";
+import { Loader2, Clock } from "lucide-react";
+import { addDays, isAfter, isSameDay, format } from "date-fns";
+import { useNavigate } from "react-router-dom";
 
 // Question types by sentiment
 const questions = {
@@ -34,15 +35,6 @@ const questions = {
   ]
 };
 
-// Fallback questions if no active capsule or specific case needed
-const fallbackQuestions = [
-  "What are you grateful for today?",
-  "What's one thing that made you smile recently?",
-  "What's a challenge you're currently facing?",
-  "What's something you're looking forward to?",
-  "What's one thing you'd like to improve about yourself?"
-];
-
 interface ActiveQuestion {
   capsuleId: string;
   question: string;
@@ -56,6 +48,7 @@ const Questionnaire = () => {
   const [savingResponse, setSavingResponse] = useState(false);
   const [activeQuestion, setActiveQuestion] = useState<ActiveQuestion | null>(null);
   const [noQuestionsMessage, setNoQuestionsMessage] = useState<string | null>(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     fetchTodayQuestion();
@@ -191,13 +184,6 @@ const Questionnaire = () => {
     return 'neutral';
   };
   
-  // Fallback question for when no scheduled question is available
-  const getFallbackQuestion = () => {
-    const today = new Date();
-    const dayOfYear = Math.floor((today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24));
-    return fallbackQuestions[dayOfYear % fallbackQuestions.length];
-  };
-  
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!response.trim()) {
@@ -248,6 +234,10 @@ const Questionnaire = () => {
     }
   };
 
+  const handleCreateCapsule = () => {
+    navigate("/create");
+  };
+
   return (
     <main className="min-h-screen bg-background pt-16">
       <Navigation />
@@ -288,36 +278,18 @@ const Questionnaire = () => {
               </div>
             </form>
           ) : (
-            <div className="py-6 text-center">
+            <div className="py-12 text-center">
               <h2 className="text-xl font-semibold mb-4">Reflection</h2>
               <p className="text-muted-foreground mb-6">{noQuestionsMessage || "No questions available right now."}</p>
               
-              <div className="border-t pt-6 mt-8">
-                <h3 className="font-medium mb-3">General Reflection</h3>
-                <p className="mb-4">While you wait for scheduled questions, you can still reflect on this:</p>
-                <p className="italic text-lg mb-6">{getFallbackQuestion()}</p>
-                
-                <form onSubmit={(e) => {
-                  e.preventDefault();
-                  if (response.trim()) {
-                    toast.success("Thank you for your reflection!");
-                    setResponse("");
-                  } else {
-                    toast.error("Please enter a response to submit");
-                  }
-                }} className="space-y-6">
-                  <Textarea
-                    className="min-h-[150px]"
-                    placeholder="Enter your thoughts here..."
-                    value={response}
-                    onChange={(e) => setResponse(e.target.value)}
-                  />
-                  
-                  <div className="flex justify-end">
-                    <Button type="submit">Save Reflection</Button>
-                  </div>
-                </form>
-              </div>
+              {(!noQuestionsMessage || noQuestionsMessage.includes("No active time capsules")) && (
+                <div className="mt-8">
+                  <Button onClick={handleCreateCapsule} className="flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    Create a Time Capsule
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </Card>
