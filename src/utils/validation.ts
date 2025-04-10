@@ -34,11 +34,12 @@ export const validateDateAndTime = (date: Date | undefined, time: string): boole
   return true;
 };
 
-export const validateSentiment = (
+// This function now returns a promise that resolves to a boolean
+export const validateSentiment = async (
   message: string, 
   sentiment: SentimentAnalysis | null, 
   warnOnNegative: boolean = true
-): boolean => {
+): Promise<boolean> => {
   // If no message or very short message, no validation needed
   if (!message || message.trim().length <= 10) {
     return true;
@@ -52,16 +53,23 @@ export const validateSentiment = (
   
   console.log("Validating sentiment:", sentiment);
   
-  // If sentiment is negative and warnings are enabled, show a confirmation
+  // If sentiment is negative and warnings are enabled, show a confirmation dialog
   if (warnOnNegative && 
       (sentiment.sentiment === "negative" || sentiment.sentiment === "NEGATIVE") && 
       sentiment.score > 0.7) {
     
-    const confirmed = window.confirm(
-      "Your message seems quite negative. Are you sure you want to save this for your future self?"
-    );
-    
-    return confirmed;
+    // Instead of using window.confirm, we return a Promise that will be resolved by the dialog
+    return new Promise((resolve) => {
+      // Set a global variable that the dialog component will use
+      window.sentimentConfirmationCallback = (confirmed: boolean) => {
+        resolve(confirmed);
+      };
+      
+      // Dispatch a custom event to trigger the dialog display
+      window.dispatchEvent(new CustomEvent('show-sentiment-confirmation', {
+        detail: { message }
+      }));
+    });
   }
   
   return true;

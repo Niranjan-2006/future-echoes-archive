@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -13,6 +12,7 @@ import NotFound from "./pages/NotFound";
 import CreateCapsule from "./pages/CreateCapsule";
 import Capsules from "./pages/Capsules";
 import Questionnaire from "./pages/Questionnaire";
+import SentimentConfirmationDialog from "@/components/ui/SentimentConfirmationDialog";
 
 const queryClient = new QueryClient({
   // Configure React Query to reduce network requests
@@ -26,7 +26,7 @@ const queryClient = new QueryClient({
   },
 });
 
-const App = () => {
+function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
 
@@ -64,40 +64,43 @@ const App = () => {
   if (isCheckingAuth) return null;
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <CapsuleProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route
-                path="/"
-                element={isAuthenticated ? <Index /> : <Navigate to="/auth" />}
-              />
-              <Route
-                path="/create"
-                element={isAuthenticated ? <CreateCapsule /> : <Navigate to="/auth" />}
-              />
-              <Route
-                path="/capsules"
-                element={isAuthenticated ? <Capsules /> : <Navigate to="/auth" />}
-              />
-              <Route
-                path="/questionnaire"
-                element={isAuthenticated ? <Questionnaire /> : <Navigate to="/auth" />}
-              />
-              <Route
-                path="/auth"
-                element={!isAuthenticated ? <Auth /> : <Navigate to="/" />}
-              />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </CapsuleProvider>
-    </QueryClientProvider>
+    <>
+      <QueryClientProvider client={queryClient}>
+        <CapsuleProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route
+                  path="/"
+                  element={isAuthenticated ? <Index /> : <Navigate to="/auth" />}
+                />
+                <Route
+                  path="/create"
+                  element={isAuthenticated ? <CreateCapsule /> : <Navigate to="/auth" />}
+                />
+                <Route
+                  path="/capsules"
+                  element={isAuthenticated ? <Capsules /> : <Navigate to="/auth" />}
+                />
+                <Route
+                  path="/questionnaire"
+                  element={isAuthenticated ? <Questionnaire /> : <Navigate to="/auth" />}
+                />
+                <Route
+                  path="/auth"
+                  element={!isAuthenticated ? <Auth /> : <Navigate to="/" />}
+                />
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </CapsuleProvider>
+      </QueryClientProvider>
+      <SentimentConfirmationDialog />
+    </>
   );
-};
+}
 
 export default App;

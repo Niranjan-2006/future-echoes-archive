@@ -12,6 +12,7 @@ import { DateTimeSelector } from "./capsule/DateTimeSelector";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { validateDateAndTime, validateSentiment } from "@/utils/validation";
 import { addDays } from "date-fns";
+import { SentimentConfirmationDialog } from "./SentimentConfirmationDialog";
 
 export const CapsuleCreator = () => {
   const navigate = useNavigate();
@@ -88,9 +89,12 @@ export const CapsuleCreator = () => {
       return;
     }
 
-    // Validate sentiment if available (but don't show to user)
-    if (message && !validateSentiment(message, sentimentData)) {
-      return;
+    // Validate sentiment if available (now async)
+    if (message) {
+      const sentimentValid = await validateSentiment(message, sentimentData);
+      if (!sentimentValid) {
+        return;
+      }
     }
 
     setLoading(true);
@@ -134,62 +138,67 @@ export const CapsuleCreator = () => {
   };
 
   return (
-    <Card className="p-6">
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="relative">
-          <MessageInput 
-            message={message}
-            onMessageChange={setMessage}
-            previewUrls={previewUrls}
-            onImageUpload={handleFileUpload}
-            onImageRemove={removeImage}
-          />
-          {analyzingSentiment && (
-            <div className="absolute right-4 top-4 text-sm text-muted-foreground flex items-center">
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Processing...
-            </div>
-          )}
-          {/* No sentiment display during creation */}
-        </div>
-        
-        <div className="space-y-2">
-          <DateTimeSelector 
-            date={date}
-            time={time}
-            onDateChange={setDate}
-            onTimeChange={setTime}
-          />
-          {dateError && (
-            <div className="text-sm font-medium text-destructive">
-              {dateError}
-            </div>
-          )}
-        </div>
-        
-        <div className="flex justify-end space-x-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => navigate("/")}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="submit"
-            disabled={loading || analyzingSentiment}
-          >
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating...
-              </>
-            ) : (
-              "Create Virtual Capsule"
+    <>
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="relative">
+            <MessageInput 
+              message={message}
+              onMessageChange={setMessage}
+              previewUrls={previewUrls}
+              onImageUpload={handleFileUpload}
+              onImageRemove={removeImage}
+            />
+            {analyzingSentiment && (
+              <div className="absolute right-4 top-4 text-sm text-muted-foreground flex items-center">
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Processing...
+              </div>
             )}
-          </Button>
-        </div>
-      </form>
-    </Card>
+            {/* No sentiment display during creation */}
+          </div>
+          
+          <div className="space-y-2">
+            <DateTimeSelector 
+              date={date}
+              time={time}
+              onDateChange={setDate}
+              onTimeChange={setTime}
+            />
+            {dateError && (
+              <div className="text-sm font-medium text-destructive">
+                {dateError}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => navigate("/")}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="submit"
+              disabled={loading || analyzingSentiment}
+            >
+              {loading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Virtual Capsule"
+              )}
+            </Button>
+          </div>
+        </form>
+      </Card>
+
+      {/* Add the sentiment confirmation dialog component */}
+      <SentimentConfirmationDialog />
+    </>
   );
 };
