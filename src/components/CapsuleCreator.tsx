@@ -11,6 +11,7 @@ import { MessageInput } from "./capsule/MessageInput";
 import { DateTimeSelector } from "./capsule/DateTimeSelector";
 import { useFileUpload } from "@/hooks/useFileUpload";
 import { validateDateAndTime, validateSentiment } from "@/utils/validation";
+import { addDays } from "date-fns";
 
 export const CapsuleCreator = () => {
   const navigate = useNavigate();
@@ -21,8 +22,14 @@ export const CapsuleCreator = () => {
   const [loading, setLoading] = useState(false);
   const [sentimentData, setSentimentData] = useState<SentimentAnalysis | null>(null);
   const [analyzingSentiment, setAnalyzingSentiment] = useState(false);
+  const [dateError, setDateError] = useState<string | null>(null);
   
   const { files, previewUrls, handleFileUpload, removeImage } = useFileUpload();
+
+  // Clear date error when date changes
+  useEffect(() => {
+    setDateError(null);
+  }, [date]);
 
   // Run sentiment analysis when message changes, but don't display results
   useEffect(() => {
@@ -48,11 +55,34 @@ export const CapsuleCreator = () => {
     return () => clearTimeout(analyzeSentimentWithDelay);
   }, [message]);
 
+  const validateRevealDate = (revealDate: Date): boolean => {
+    const currentDate = new Date();
+    const maxDate = addDays(currentDate, 30);
+    
+    if (revealDate > maxDate) {
+      setDateError("Set a reveal date within 30 days!");
+      return false;
+    }
+    
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!validateDateAndTime(date, time)) return;
     
+    const revealDate = date ? new Date(date) : new Date();
+    if (time) {
+      const [hours, minutes] = time.split(':');
+      revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
+    }
+    
+    // Validate reveal date is within 30 days
+    if (!validateRevealDate(revealDate)) {
+      return;
+    }
+
     if (!message && previewUrls.length === 0) {
       toast.error("Please add a message or image to your virtual capsule");
       return;
@@ -68,12 +98,6 @@ export const CapsuleCreator = () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("User not authenticated");
-
-      const revealDate = date ? new Date(date) : new Date();
-      if (time) {
-        const [hours, minutes] = time.split(':');
-        revealDate.setHours(parseInt(hours, 10), parseInt(minutes, 10));
-      }
 
       // Ensure we have the latest sentiment data
       let finalSentimentData = sentimentData;
@@ -129,12 +153,19 @@ export const CapsuleCreator = () => {
           {/* No sentiment display during creation */}
         </div>
         
-        <DateTimeSelector 
-          date={date}
-          time={time}
-          onDateChange={setDate}
-          onTimeChange={setTime}
-        />
+        <div className="space-y-2">
+          <DateTimeSelector 
+            date={date}
+            time={time}
+            onDateChange={setDate}
+            onTimeChange={setTime}
+          />
+          {dateError && (
+            <div className="text-sm font-medium text-destructive">
+              {dateError}
+            </div>
+          )}
+        </div>
         
         <div className="flex justify-end space-x-4">
           <Button

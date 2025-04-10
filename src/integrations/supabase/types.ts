@@ -30,6 +30,47 @@ export type Database = {
         }
         Relationships: []
       }
+      questionnaire_responses: {
+        Row: {
+          capsule_id: string
+          id: string
+          question: string
+          question_date: string
+          response: string
+          response_date: string
+          sentiment_data: Json | null
+          user_id: string
+        }
+        Insert: {
+          capsule_id: string
+          id?: string
+          question: string
+          question_date: string
+          response: string
+          response_date?: string
+          sentiment_data?: Json | null
+          user_id: string
+        }
+        Update: {
+          capsule_id?: string
+          id?: string
+          question?: string
+          question_date?: string
+          response?: string
+          response_date?: string
+          sentiment_data?: Json | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "questionnaire_responses_capsule_id_fkey"
+            columns: ["capsule_id"]
+            isOneToOne: false
+            referencedRelation: "time_capsules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       time_capsules: {
         Row: {
           created_at: string
