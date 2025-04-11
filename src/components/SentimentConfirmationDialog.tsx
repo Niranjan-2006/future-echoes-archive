@@ -55,7 +55,7 @@ export function SentimentConfirmationDialog() {
     }}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle className="text-xl">Future Echoes Saya</DialogTitle>
+          <DialogTitle className="text-xl">Future Echoes Says</DialogTitle>
           <DialogDescription className="text-base pt-2">
             Your message seems quite negative. Are you sure you want to save this for your future self?
           </DialogDescription>
