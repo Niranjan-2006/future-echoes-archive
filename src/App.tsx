@@ -12,7 +12,7 @@ import NotFound from "./pages/NotFound";
 import CreateCapsule from "./pages/CreateCapsule";
 import Capsules from "./pages/Capsules";
 import Questionnaire from "./pages/Questionnaire";
-import SentimentConfirmationDialog from "@/components/ui/SentimentConfirmationDialog";
+import { SentimentConfirmationDialog } from "@/components/SentimentConfirmationDialog";
 
 const queryClient = new QueryClient({
   // Configure React Query to reduce network requests
