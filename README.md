@@ -1,6 +1,4 @@
-Future Echoes: A Digital Capsule
-**URL**: https://lovable.dev/projects/59439e90-0d24-4822-a463-25b6707f28c6
-This is my project now forever
+# Future Echoes: A Digital Capsule
 
 Future Echoes is a digital time capsule application designed for personal reflection and emotional tracking. It allows users to capture their thoughts, feelings, and experiences at a specific point in time, with the intention of revisiting them in the future.
 
@@ -33,9 +31,9 @@ Gain insights into their emotional journey.
 Encourage consistent self-reflection through thoughtful questioning.
 It's designed to be a personal and introspective tool, helping users connect with their past selves and understand their emotional evolution.
 
-## What technologies are used for this project?
+## Technologies Used
 
-This project is built with .
+This project is built with:
 
 - Vite
 - TypeScript
